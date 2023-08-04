@@ -25,6 +25,6 @@
     ],
     "injects": {
         "renderer": "./src/renderer.js",
-        "main": "./src/main.js",
+        "main": "./src/main.js"
     }
 }
