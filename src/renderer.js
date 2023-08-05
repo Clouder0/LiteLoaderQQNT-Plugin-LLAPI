@@ -2,15 +2,45 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-04 20:16:04
+ * @LastEditTime: 2023-08-05 18:33:02
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
  */
-const EventEmitter = require('events');
-const { randomUUID } = require("crypto");
-const { ipcRenderer } = require("electron");
-export const { enabled, preload, debuggerOrigin, webContentsId, plugins, env, hasColorSupport } = ipcRenderer.sendSync("___!boot");
+const plugin_path = LiteLoader.plugins.LLAPI.path.plugin;
+const ipcRenderer = LLAPI_PRE.ipcRenderer_LL;
+const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
+const randomUUID = LLAPI_PRE.randomUUID_LL;
+const set_id = LLAPI_PRE.set_id;
+
+export function patchLogger() {
+    const log = (level, ...args) => {
+        const serializedArgs = [];
+        for (const arg of args) {
+            serializedArgs.push(arg);
+        }
+        LLAPI_PRE.ipcRenderer_LL.send("___!log", level, ...serializedArgs);
+    };
+    (
+        [
+            ["debug", 0],
+            ["log", 1],
+            ["info", 2],
+            ["warn", 3],
+            ["error", 4],
+        ]
+    ).forEach(([method, level]) => {
+        console[method] = (...args) => log(level, ...args);
+    });
+}
+patchLogger(); // 重写渲染进程log
+
+//export const { webContentsId } = ipcRenderer.sendSync("___!boot");
+const webContentsId = "2"
+
+function output(...args) {
+    console.log("\x1b[32m[LLAPI-渲染]\x1b[0m", ...args);
+}
 
 class NTCallError extends Error {
     code;
@@ -21,12 +51,15 @@ class NTCallError extends Error {
         this.message = message;
     }
 }
+
 function ntCall(eventName, cmdName, args, isRegister = false) {
-    return new Promise((resolve, reject) => {
-        const uuid = randomUUID();
-        ipcRenderer.on(`LL_DOWN_${webContentsId}`, (event, data) => {
+    return new Promise(async (resolve, reject) => {
+        const uuid = await randomUUID();
+        ipcRenderer_on(`LL_DOWN_${webContentsId}`, (event, data) => {
+            output(data)
             resolve(data);
         });
+        /**
         ipcRenderer.send(
             `LL_UP_${webContentsId}`,
             {
@@ -36,6 +69,8 @@ function ntCall(eventName, cmdName, args, isRegister = false) {
             },
             [cmdName, ...args]
         );
+         */
+        set_id(uuid, webContentsId);
         ipcRenderer.send(
             `IPC_UP_${webContentsId}`,
             {
@@ -48,10 +83,47 @@ function ntCall(eventName, cmdName, args, isRegister = false) {
     });
 }
 
-class Api extends EventEmitter{
+
+class EventEmitter {
+    constructor() {
+        this.events = {};
+    }
+
+    on(event, listener) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+        this.events[event].push(listener);
+    }
+    
+    once(eventName, listener) {
+        const onceListener = (...args) => {
+            listener(...args);
+            this.off(eventName, onceListener);
+        };
+        this.on(eventName, onceListener);
+    }
+
+    off(eventName, listener) {
+        if (this.events[eventName]) {
+            this.events[eventName] = this.events[eventName].filter(fn => fn !== listener);
+        }
+    }
+
+    emit(event, ...args) {
+        const listeners = this.events[event];
+        if (listeners) {
+            listeners.forEach(listener => {
+                listener(...args);
+            });
+        }
+    }
+}
+
+class Api extends EventEmitter {
     /**
      * @description 监听新消息
-     * LLAPI.on("new-messages", (message) => {
+     * window.LLAPI.on("new-messages", (message) => {
      *    console.log(message);
      * })
      */
@@ -150,35 +222,33 @@ class Api extends EventEmitter{
     }
 }
 
-function output(...args) {
-    console.log("\x1b[32m[LLAPI-渲染]\x1b[0m", ...args);
-}
-
 const apiInstance = new Api();
-ipcRenderer.on('new_message-main', (event, args) => {
+
+ipcRenderer_on('new_message-main', (event, args) => {
     const messages = (args?.[1]?.[0]?.payload?.msgList).map((msg) => constructor.constructMessage(msg));
     /**
      * @description 获取新消息
      */
     apiInstance.emit("new-messages", messages);
 });
-ipcRenderer.on('user-info-list-main', (event, args) => {
+ipcRenderer_on('user-info-list-main', (event, args) => {
     apiInstance.emit("user-info-list", args);
 });
-ipcRenderer.on('groups-list-updated-main', (event, args) => {
+ipcRenderer_on('groups-list-updated-main', (event, args) => {
     const groupsList = ((args[1]?.[0]?.payload?.groupList || [])).map((group) => constructor.constructGroup(group));
     apiInstance.emit("groups-list-updated", groupsList);
 });
-ipcRenderer.on('friends-list-updated-main', (event, args) => {
+ipcRenderer_on('friends-list-updated-main', (event, args) => {
     const friendsList = [];
     ((args?.[1]?.[0]?.payload?.data || [])).forEach((category) => friendsList.push(...((category?.buddyList || [])).map((friend) => constructor.constructUser(friend))));
     apiInstance.emit("friends-list-updated", friendsList);
 });
-Object.defineProperty(global, "LLAPI", {
+Object.defineProperty(window, "LLAPI", {
     value: apiInstance,
     writable: false,
 });
-Object.defineProperty(global, "llapi", {
+
+Object.defineProperty(window, "llapi", {
     value: apiInstance,
     writable: false,
 });
@@ -320,5 +390,3 @@ class Destructor {
 }
 
 const destructor = new Destructor();
-
-
