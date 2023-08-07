@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "type": "extension",
+    "type": "framework",
     "name": "LLAPI",
     "slug": "LLAPI",
     "description": "LiteLoaderQQNT的插件API",
