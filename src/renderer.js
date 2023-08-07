@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-07 21:02:51
+ * @LastEditTime: 2023-08-08 00:07:10
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -189,19 +189,19 @@ class Api extends EventEmitter {
      * @param {Peer} peer 对方的ID
      * @param {string[]} msgIds 消息ID的列表
      */
-    async forwardMessage(peer, msgIds) {
+    async forwardMessage(srcpeer, dstpeer, msgIds) {
         ntCall("ns-ntApi", "nodeIKernelMsgService/forwardMsgWithComment", [
             {
                 msgIds: msgIds,
                 srcContact: {
-                  chatType: 2,
-                  peerUid: peer.peerUid,
+                  chatType: srcpeer.chatType,
+                  peerUid: srcpeer.peerUid,
                   guildId: ""
                 },
                 dstContacts: [
                   {
-                    chatType: 2,
-                    peerUid: peer.peerUid,
+                    chatType: dstpeer.chatType,
+                    peerUid: dstpeer.peerUid,
                     guildId: ""
                   }
                 ],

@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-07 23:30:44
+ * @LastEditTime: 2023-08-08 00:02:19
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -49,10 +49,13 @@ function onBrowserWindowCreated(window, plugin) {
             if (data && data[0] === "changeRecentContacPeerUid") {
                 const peerUid = data[1].peerUid;
                 peer = {
-                    chatType: peerUid[0] == "u" ? "friend" : "group",
+                    chatType: peerUid[0] == "u" ? 1 : 2,
                     peerUid: peerUid,
                     guildId: "",
                 }
+            }
+            if (data && data[0] === "nodeIKernelMsgService/forwardMsgWithComment") {
+                output(JSON.stringify(data))
             }
         }
     });
