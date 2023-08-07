@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-05 18:33:02
+ * @LastEditTime: 2023-08-07 21:02:51
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -17,7 +17,7 @@ export function patchLogger() {
     const log = (level, ...args) => {
         const serializedArgs = [];
         for (const arg of args) {
-            serializedArgs.push(arg);
+            serializedArgs.push(typeof arg == "string" ? arg: arg?.toString());
         }
         LLAPI_PRE.ipcRenderer_LL.send("___!log", level, ...serializedArgs);
     };
@@ -30,13 +30,16 @@ export function patchLogger() {
             ["error", 4],
         ]
     ).forEach(([method, level]) => {
-        console[method] = (...args) => log(level, ...args);
+        const originalConsoleMethod = console[method];
+        console[method] = (...args) => {
+            log(level, ...args)
+            originalConsoleMethod.apply(console, args);
+        };
     });
 }
 patchLogger(); // 重写渲染进程log
 
-//export const { webContentsId } = ipcRenderer.sendSync("___!boot");
-const webContentsId = "2"
+export const { webContentsId } = ipcRenderer.sendSync("___!boot");
 
 function output(...args) {
     console.log("\x1b[32m[LLAPI-渲染]\x1b[0m", ...args);
@@ -56,7 +59,6 @@ function ntCall(eventName, cmdName, args, isRegister = false) {
     return new Promise(async (resolve, reject) => {
         const uuid = await randomUUID();
         ipcRenderer_on(`LL_DOWN_${webContentsId}`, (event, data) => {
-            output(data)
             resolve(data);
         });
         /**
@@ -149,6 +151,14 @@ class Api extends EventEmitter {
         });
     }
     /**
+     * @description 获取当前聊天窗口的peer
+     * @returns peer
+     */
+    async getPeer() {
+        const peer = await LLAPI_PRE.get_peer()
+        return peer;
+    }
+    /**
      * @description 发送消息
      * @param {Peer} peer 对方的ID
      * @param {MessageElement[]} elements
@@ -170,6 +180,32 @@ class Api extends EventEmitter {
                         else return null;
                     }),
                 ),
+            },
+            null,
+        ]);
+    }
+    /**
+     * @description 转发消息
+     * @param {Peer} peer 对方的ID
+     * @param {string[]} msgIds 消息ID的列表
+     */
+    async forwardMessage(peer, msgIds) {
+        ntCall("ns-ntApi", "nodeIKernelMsgService/forwardMsgWithComment", [
+            {
+                msgIds: msgIds,
+                srcContact: {
+                  chatType: 2,
+                  peerUid: peer.peerUid,
+                  guildId: ""
+                },
+                dstContacts: [
+                  {
+                    chatType: 2,
+                    peerUid: peer.peerUid,
+                    guildId: ""
+                  }
+                ],
+                commentElements: []
             },
             null,
         ]);

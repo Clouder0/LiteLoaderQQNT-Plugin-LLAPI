@@ -2,20 +2,21 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-05 17:10:37
+ * @LastEditTime: 2023-08-07 23:30:44
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
  */
+
 const { ipcMain } = require("electron");
 const { randomUUID } = require("crypto");
+
 let peer;
 
 const pendingCallbacks = {};
 
 // 创建窗口时触发
 function onBrowserWindowCreated(window, plugin) {
-    const webContentsId = window.webContents.id.toString();
     const original_send = (window.webContents.__qqntim_original_object && window.webContents.__qqntim_original_object.send) || window.webContents.send;
     const patched_send = (channel, ...args) => {
         if (args[1] && args[1][0]?.cmdName && args[1][0].cmdName === "nodeIKernelMsgListener/onRecvMsg") {
@@ -41,32 +42,48 @@ function onBrowserWindowCreated(window, plugin) {
       } else {
         window.webContents.send = patched_send;
     }
-    window.webContents.on("ipc-message", (_, channel, ...args) => {
-        // output(channel, JSON.stringify(args))
-        if (args[1] && args[1][0] && args[1][0].includes("AuthData")) {
-            //output("AuthData", JSON.stringify(args))
-        } else if (args[1] && args[1][0] && args[1][0].includes("Msg")) {
-            //output("Msg", JSON.stringify(args))
-        } else if (args[1] && args[1][0] && args[1][0].includes("Group")) {
-            //output("Group", JSON.stringify(args))
-        } else if (args[1] && args[1][0] === "nodeIKernelMsgService/setMsgRead") {
-            peer = args[1][1].peer;
+    window.webContents.on("-ipc-message", (_, status, name, ...args) => {
+        if (name !== "___!log" && args[0][1] && args[0][1][0] != "info") {
+            const event = args[0][0];
+            const data = args[0][1];
+            if (data && data[0] === "changeRecentContacPeerUid") {
+                const peerUid = data[1].peerUid;
+                peer = {
+                    chatType: peerUid[0] == "u" ? "friend" : "group",
+                    peerUid: peerUid,
+                    guildId: "",
+                }
+            }
         }
-        /**
-        if (channel.includes("LL_UP_")) {
-            const id = args[0].callbackId;
-            output(id)
-            pendingCallbacks[id] = 'LL_DOWN_'+channel.split("LL_UP_")[1];
-        }
-         */
     });
+    const proxyEvents = new Proxy(window.webContents._events["-ipc-message"], {
+        // 拦截函数调用
+        apply(target, thisArg, argumentsList) {
+            /**
+            if (argumentsList[3][1][0] && argumentsList[3][1][0].includes("sendMsg")) {
+                // 消息内容数据
+                const content = argumentsList[3][1][1]
+                // 消息内容
+                //output(content.msgElements[0].textElement.content)
+                //content.msgElements[0].textElement.content = "测试"
+                //output("ipc-msg被拦截", JSON.stringify(content));
+            }
+             */
+            return target.apply(thisArg, argumentsList);
+        }
+    });
+    window.webContents._events["-ipc-message"] = proxyEvents
     window.webContents.on("ipc-message-sync", (event, channel, ...args) => {
+        //output(channel, JSON.stringify(args))
         if (channel == "___!boot") {
             event.returnValue = {
                 enabled: true,
-                webContentsId: webContentsId,
+                webContentsId: window.webContents.id.toString()
             };
         }
+    });
+    window.webContents.on('did-finish-load', () => {
+        console.log('Page finished loading');
     });
 }
 
@@ -101,7 +118,18 @@ function onLoad(plugin) {
             try {
                 pendingCallbacks[id] = 'LL_DOWN_'+webContentsId;
             } catch (error) {
-                console.log(error);
+                output(error);
+                return {};
+            }
+        }
+    );
+    ipcMain.handle(
+        "LiteLoader.LLAPI_PRE.get_peer",
+        (event) => {
+            try {
+                return peer;
+            } catch (error) {
+                output(error);
                 return {};
             }
         }
