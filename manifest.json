@@ -14,11 +14,7 @@
     ],
     "repository": {
         "repo": "LiteLoaderQQNT-Plugin-LLAPI",
-        "branch": "main",
-        "use_release": {
-            "tag": "latest",
-            "name": "LiteLoaderQQNT-Plugin-LLAPI.zip"
-        }
+        "branch": "main"
     },
     "platform": [
         "win32",
