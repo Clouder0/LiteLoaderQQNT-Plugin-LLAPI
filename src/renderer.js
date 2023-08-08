@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-08 17:20:09
+ * @LastEditTime: 2023-08-08 20:19:11
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -134,7 +134,8 @@ class Api extends EventEmitter {
      * @tips 该事件可以使用qContextMenu
      *      event: 为事件
      *      target: 为右键位置的document
-     * window.LLAPI.on("context-msg-menu", (event, target) => {
+     *      msgIds: 为消息ID
+     * window.LLAPI.on("context-msg-menu", (event, target, msgIds) => {
      *    console.log(event);
      * })
      */
@@ -441,7 +442,22 @@ function monitor_qmenu(event) {
     const { classList } = target
     if (classList[0] && qContextMenu.innerText.includes("转发")) {
         // 发送context-menu事件
-        apiInstance.emit("context-msg-menu", event, target);
+        let msgIds;
+        // 尝试10次获取msgIds
+        for (let i = 0; i < 10; i++) {
+            msgIds = target.id;
+            if (!msgIds) {
+                target = target.offsetParent;
+            } else {
+                break; // 获取到msgIds退出循环
+            }
+        }
+        if (msgIds.includes("ark-view-ml-root-")) {
+            msgIds = msgIds.replace("ark-view-ml-root-", "");
+        } else {
+            msgIds = msgIds.split("-")[0];
+        }
+        apiInstance.emit("context-msg-menu", event, target, msgIds);
     }
 }
 
