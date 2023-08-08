@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-08 00:07:10
+ * @LastEditTime: 2023-08-08 17:20:09
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -127,6 +127,15 @@ class Api extends EventEmitter {
      * @description 监听新消息
      * window.LLAPI.on("new-messages", (message) => {
      *    console.log(message);
+     * })
+     */
+    /**
+     * @description 监听QQ消息菜单打开事件
+     * @tips 该事件可以使用qContextMenu
+     *      event: 为事件
+     *      target: 为右键位置的document
+     * window.LLAPI.on("context-msg-menu", (event, target) => {
+     *    console.log(event);
      * })
      */
     /**
@@ -426,3 +435,43 @@ class Destructor {
 }
 
 const destructor = new Destructor();
+
+function monitor_qmenu(event) {
+    let { target } = event
+    const { classList } = target
+    if (classList[0] && qContextMenu.innerText.includes("转发")) {
+        // 发送context-menu事件
+        apiInstance.emit("context-msg-menu", event, target);
+    }
+}
+
+function onLoad() {
+    const observer = new MutationObserver((mutationsList, observer) => {
+        // 遍历每个变化
+        for (const mutation of mutationsList) {
+            const { target } = mutation
+            const { classList } = target
+            // 检查是否有新元素添加
+            if (mutation.type === 'childList' && classList[0]) {
+                // 遍历每个新增的节点
+                mutation.addedNodes.forEach(node => {
+                    // 判断节点是否为元素节点
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        if (node.querySelector('.image.pic-element')) {
+                            node.querySelector('.image.pic-element').addEventListener('contextmenu', monitor_qmenu)
+                        }
+                        if (node.querySelector('.image.market-face-element')) {
+                            node.querySelector('.image.market-face-element').addEventListener('contextmenu', monitor_qmenu)
+                        }
+                    }
+                });
+            }
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('contextmenu', monitor_qmenu)
+}
+
+export {
+    onLoad
+}
