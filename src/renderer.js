@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-08 20:19:11
+ * @LastEditTime: 2023-08-08 22:57:46
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -172,10 +172,10 @@ class Api extends EventEmitter {
      * @description 发送消息
      * @param {Peer} peer 对方的ID
      * @param {MessageElement[]} elements
-     * elements: {
+     * elements: [{
      *    type: "text",
      *    content: "一条消息"
-        }
+        }]
      */
     async sendMessage(peer, elements) {
         ntCall("ns-ntApi", "nodeIKernelMsgService/sendMsg", [
@@ -185,6 +185,7 @@ class Api extends EventEmitter {
                 msgElements: await Promise.all(
                     elements.map(async (element) => {
                         if (element.type == "text") return destructor.destructTextElement(element);
+                        else if (element.type == "image") return destructor.destructImageElement(element, await media.prepareImageElement(element.file));
                         else if (element.type == "face") return destructor.destructFaceElement(element);
                         else if (element.type == "raw") return destructor.destructRawElement(element);
                         else return null;
@@ -203,17 +204,9 @@ class Api extends EventEmitter {
         ntCall("ns-ntApi", "nodeIKernelMsgService/forwardMsgWithComment", [
             {
                 msgIds: msgIds,
-                srcContact: {
-                  chatType: srcpeer.chatType,
-                  peerUid: srcpeer.peerUid,
-                  guildId: ""
-                },
+                srcContact: destructor.destructPeer(srcpeer),
                 dstContacts: [
-                  {
-                    chatType: dstpeer.chatType,
-                    peerUid: dstpeer.peerUid,
-                    guildId: ""
-                  }
+                    destructor.destructPeer(dstpeer)
                 ],
                 commentElements: []
             },
@@ -323,11 +316,19 @@ class Constructor {
             raw: ele,
         };
     }
+    constructImageElement(ele, msg) {
+        return {
+            type: "image",
+            file: ele.picElement.sourcePath,
+            downloadedPromise: media.downloadMedia(msg.msgId, ele.elementId, msg.peerUid, msg.chatType, ele.picElement.thumbPath.get(0), ele.picElement.sourcePath),
+            raw: ele,
+        };
+    }
     constructMessage(msg) {
         const downloadedPromises = [];
         const elements = (msg.elements).map((ele) => {
             if (ele.elementType == 1) return this.constructTextElement(ele);
-            else if (ele.elementType == 222222) {
+            else if (ele.elementType == 2) {
                 const element = this.constructImageElement(ele, msg);
                 downloadedPromises.push(element.downloadedPromise);
                 return element;
@@ -434,8 +435,62 @@ class Destructor {
         };
     }
 }
-
 const destructor = new Destructor();
+
+class Media {
+    async prepareImageElement(file) {
+        const type = await ntCall("ns-fsApi", "getFileType", [file]);
+        const md5 = await ntCall("ns-fsApi", "getFileMd5", [file]);
+        const fileName = `${md5}.${type.ext}`;
+        const filePath = await ntCall("ns-ntApi", "nodeIKernelMsgService/getRichMediaFilePath", [
+            {
+                md5HexStr: md5,
+                fileName: fileName,
+                elementType: 2,
+                elementSubType: 0,
+                thumbSize: 0,
+                needCreate: true,
+                fileType: 1,
+            },
+        ]);
+        await ntCall("ns-fsApi", "copyFile", [{ fromPath: file, toPath: filePath }]);
+        const imageSize = await ntCall("ns-fsApi", "getImageSizeFromPath", [file]);
+        const fileSize = await ntCall("ns-fsApi", "getFileSize", [file]);
+        return {
+            md5HexStr: md5,
+            fileSize: fileSize,
+            picWidth: imageSize.width,
+            picHeight: imageSize.height,
+            fileName: fileName,
+            sourcePath: filePath,
+            original: true,
+            picType: 1001,
+            picSubType: 0,
+            fileUuid: "",
+            fileSubId: "",
+            thumbFileSize: 0,
+            summary: "",
+        };
+    }
+    async downloadMedia(msgId, elementId, peerUid, chatType, filePath, originalFilePath) {
+        if (await exists(originalFilePath)) return;
+        return await ntCall("ns-ntApi", "nodeIKernelMsgService/downloadRichMedia", [
+            {
+                getReq: {
+                    msgId: msgId,
+                    chatType: chatType,
+                    peerUid: peerUid,
+                    elementId: elementId,
+                    thumbSize: 0,
+                    downloadType: 2,
+                    filePath: filePath,
+                },
+            },
+            undefined,
+        ]);
+    }
+}
+const media = new Media();
 
 function monitor_qmenu(event) {
     let { target } = event
