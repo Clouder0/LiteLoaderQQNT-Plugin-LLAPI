@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-08 17:30:09
+ * @LastEditTime: 2023-08-08 17:48:27
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -46,7 +46,6 @@ function onBrowserWindowCreated(window, plugin) {
         if (name !== "___!log" && args[0][1] && args[0][1][0] != "info") {
             const event = args[0][0];
             const data = args[0][1];
-            output(JSON.stringify(data));
             if (data && data[0] === "changeRecentContacPeerUid") {
                 const peerUid = data[1].peerUid;
                 peer = {
