@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-09 15:04:44
+ * @LastEditTime: 2023-08-10 02:22:09
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -43,7 +43,7 @@ function onBrowserWindowCreated(window, plugin) {
       } else {
         window.webContents.send = patched_send;
     }
-    window.webContents.on("-ipc-message", (_, status, name, ...args) => {
+    function ipc_message(_, status, name, ...args) {
         if (name !== "___!log" && args[0][1] && args[0][1][0] != "info") {
             const event = args[0][0];
             const data = args[0][1];
@@ -57,24 +57,30 @@ function onBrowserWindowCreated(window, plugin) {
                 window.webContents.send('set_message-main');
             }
         }
-    });
-    const proxyEvents = new Proxy(window.webContents._events["-ipc-message"], {
+    }
+    const ipc_message_proxy = window.webContents._events["-ipc-message"]?.[0] || window.webContents._events["-ipc-message"];
+    const proxyEvents = new Proxy(ipc_message_proxy, {
         // 拦截函数调用
         apply(target, thisArg, argumentsList) {
             /**
-            if (argumentsList[3][1][0] && argumentsList[3][1][0].includes("sendMsg")) {
+            if (argumentsList[3][1] && argumentsList[3][1][0] && argumentsList[3][1][0].includes("sendMsg")) {
                 // 消息内容数据
                 const content = argumentsList[3][1][1]
                 // 消息内容
                 //output(content.msgElements[0].textElement.content)
                 //content.msgElements[0].textElement.content = "测试"
-                //output("ipc-msg被拦截", JSON.stringify(content));
+                output("ipc-msg被拦截", JSON.stringify(argumentsList[3]));
             }
              */
+            ipc_message(...argumentsList)
             return target.apply(thisArg, argumentsList);
         }
     });
-    window.webContents._events["-ipc-message"] = proxyEvents
+    if (window.webContents._events["-ipc-message"][0]) {
+        window.webContents._events["-ipc-message"][0] = proxyEvents
+    } else {
+        window.webContents._events["-ipc-message"] = proxyEvents
+    }
     window.webContents.on("ipc-message-sync", (event, channel, ...args) => {
         //output(channel, JSON.stringify(args))
         if (channel == "___!boot") {
