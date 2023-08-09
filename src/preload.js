@@ -27,4 +27,8 @@ contextBridge.exposeInMainWorld("LLAPI_PRE", {
     get_peer: () => ipcRenderer.invoke(
         "LiteLoader.LLAPI_PRE.get_peer"
     ),
+    exists: (path) => ipcRenderer.invoke(
+        "LiteLoader.LLAPI_PRE.exists",
+        path
+    )
 });

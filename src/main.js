@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-08 22:52:41
+ * @LastEditTime: 2023-08-09 03:10:17
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -10,6 +10,7 @@
 
 const { ipcMain } = require("electron");
 const { randomUUID } = require("crypto");
+const { exists } = require("fs-extra");
 
 let peer;
 
@@ -46,7 +47,6 @@ function onBrowserWindowCreated(window, plugin) {
         if (name !== "___!log" && args[0][1] && args[0][1][0] != "info") {
             const event = args[0][0];
             const data = args[0][1];
-            //output(JSON.stringify(args))
             if (data && data[0] === "changeRecentContacPeerUid") {
                 const peerUid = data[1].peerUid;
                 peer = {
@@ -54,6 +54,7 @@ function onBrowserWindowCreated(window, plugin) {
                     uid: peerUid,
                     guildId: "",
                 }
+                window.webContents.send('set_message-main');
             }
         }
     });
@@ -131,6 +132,17 @@ function onLoad(plugin) {
                 return peer;
             } catch (error) {
                 output(error);
+                return {};
+            }
+        }
+    );
+    ipcMain.handle(
+        "LiteLoader.LLAPI_PRE.exists",
+        async (event, path) => {
+            try {
+                return await exists(path);
+            } catch (error) {
+                console.log(error);
                 return {};
             }
         }

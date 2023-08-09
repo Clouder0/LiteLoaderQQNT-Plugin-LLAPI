@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-08 22:57:46
+ * @LastEditTime: 2023-08-09 14:43:37
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -12,6 +12,7 @@ const ipcRenderer = LLAPI_PRE.ipcRenderer_LL;
 const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
 const randomUUID = LLAPI_PRE.randomUUID_LL;
 const set_id = LLAPI_PRE.set_id;
+const exists = LLAPI_PRE.exists;
 
 export function patchLogger() {
     const log = (level, ...args) => {
@@ -234,8 +235,8 @@ class Api extends EventEmitter {
         });
     }
     /**
-     * @description 获取私信信息
-     * @param {number} peer 对方UIN
+     * @description 获取历史聊天记录
+     * @param {number} peer 对方Peer
      * @param {string} startMsgId 起始消息ID
      * @returns
      */
@@ -272,6 +273,9 @@ ipcRenderer_on('new_message-main', (event, args) => {
 });
 ipcRenderer_on('user-info-list-main', (event, args) => {
     apiInstance.emit("user-info-list", args);
+});
+ipcRenderer_on('set_message-main', (event) => {
+    apiInstance.emit("set_message");
 });
 ipcRenderer_on('groups-list-updated-main', (event, args) => {
     const groupsList = ((args[1]?.[0]?.payload?.groupList || [])).map((group) => constructor.constructGroup(group));
@@ -495,7 +499,7 @@ const media = new Media();
 function monitor_qmenu(event) {
     let { target } = event
     const { classList } = target
-    if (classList[0] && qContextMenu.innerText.includes("转发")) {
+    if (classList?.[0] !== "q-context-menu" && (qContextMenu.innerText.includes("转发") || qContextMenu.innerText.includes("转文字"))) {
         // 发送context-menu事件
         let msgIds;
         // 尝试10次获取msgIds
@@ -511,6 +515,9 @@ function monitor_qmenu(event) {
             msgIds = msgIds.replace("ark-view-ml-root-", "");
         } else {
             msgIds = msgIds.split("-")[0];
+        }
+        if (qContextMenu.innerText.includes("转文字")) {
+            target.classList = ["ptt-element__progress"]
         }
         apiInstance.emit("context-msg-menu", event, target, msgIds);
     }
@@ -528,12 +535,12 @@ function onLoad() {
                 mutation.addedNodes.forEach(node => {
                     // 判断节点是否为元素节点
                     if (node.nodeType === Node.ELEMENT_NODE) {
-                        if (node.querySelector('.image.pic-element')) {
-                            node.querySelector('.image.pic-element').addEventListener('contextmenu', monitor_qmenu)
-                        }
-                        if (node.querySelector('.image.market-face-element')) {
-                            node.querySelector('.image.market-face-element').addEventListener('contextmenu', monitor_qmenu)
-                        }
+                        node.querySelectorAll('.image.pic-element').forEach((img_node) => {
+                            img_node.addEventListener('contextmenu', monitor_qmenu)
+                        })
+                        node.querySelectorAll('.image.market-face-element').forEach((img_node) => {
+                            img_node.addEventListener('contextmenu', monitor_qmenu)
+                        })
                     }
                 });
             }
