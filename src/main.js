@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-09 03:10:17
+ * @LastEditTime: 2023-08-09 15:04:44
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -10,7 +10,7 @@
 
 const { ipcMain } = require("electron");
 const { randomUUID } = require("crypto");
-const { exists } = require("fs-extra");
+const { existsSync } = require("fs");
 
 let peer;
 
@@ -138,9 +138,9 @@ function onLoad(plugin) {
     );
     ipcMain.handle(
         "LiteLoader.LLAPI_PRE.exists",
-        async (event, path) => {
+        (event, path) => {
             try {
-                return await exists(path);
+                return existsSync(path);
             } catch (error) {
                 console.log(error);
                 return {};
