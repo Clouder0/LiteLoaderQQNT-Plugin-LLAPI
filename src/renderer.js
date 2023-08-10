@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-10 01:44:55
+ * @LastEditTime: 2023-08-10 18:20:30
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -13,6 +13,8 @@ const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
 const randomUUID = LLAPI_PRE.randomUUID_LL;
 const set_id = LLAPI_PRE.set_id;
 const exists = LLAPI_PRE.exists;
+
+const qmenu = []
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -44,7 +46,10 @@ export function patchLogger() {
 }
 patchLogger(); // 重写渲染进程log
 
-export const { webContentsId } = ipcRenderer.sendSync("___!boot");
+export let { webContentsId } = ipcRenderer.sendSync("___!boot");
+if (!webContentsId) {
+    webContentsId = "2"
+}
 
 function output(...args) {
     console.log("\x1b[32m[LLAPI-渲染]\x1b[0m", ...args);
@@ -144,6 +149,18 @@ class Api extends EventEmitter {
      *    console.log(event);
      * })
      */
+        /**
+     * @description 添加QQ消息的右键菜单项目
+     * @param {function} func 函数添加逻辑
+     * @example func:
+     * function abc(qContextMenu) {
+     *     qContextMenu.insertAdjacentHTML('beforeend', separatorHTML)
+     *     qContextMenu.insertAdjacentHTML('beforeend', repeatmsgHTML)
+     * }
+     */
+    add_qmenu(...func) {
+        qmenu.push(func)
+    }
     /**
      * @description 获取当前用户信息
      * @returns uid: number, uin: number
@@ -545,6 +562,12 @@ function onLoad() {
                         node.querySelectorAll('.image.market-face-element').forEach((img_node) => {
                             img_node.addEventListener('contextmenu', monitor_qmenu)
                         })
+                    }
+                    // QQ菜单弹出
+                    if (node?.previousSibling?.classList?.[0] == "q-context-menu") {
+                        qmenu[0].forEach(listener => {
+                            listener(node.previousSibling);
+                        });
                     }
                 });
             }

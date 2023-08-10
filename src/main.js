@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-10 02:22:09
+ * @LastEditTime: 2023-08-10 18:05:04
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -29,6 +29,7 @@ function onBrowserWindowCreated(window, plugin) {
         } else if (args[1] && args[1][0]?.cmdName && args[1][0].cmdName === "nodeIKernelProfileListener/onProfileSimpleChanged") {
             window.webContents.send('user-info-list-main', args);
         }
+        //output(channel, JSON.stringify(args))
         if (args[0]?.callbackId) {
             const id = args[0].callbackId;
             if (id in pendingCallbacks) {
@@ -45,6 +46,7 @@ function onBrowserWindowCreated(window, plugin) {
     }
     function ipc_message(_, status, name, ...args) {
         if (name !== "___!log" && args[0][1] && args[0][1][0] != "info") {
+            //output(JSON.stringify(args))
             const event = args[0][0];
             const data = args[0][1];
             if (data && data[0] === "changeRecentContacPeerUid") {
@@ -82,7 +84,6 @@ function onBrowserWindowCreated(window, plugin) {
         window.webContents._events["-ipc-message"] = proxyEvents
     }
     window.webContents.on("ipc-message-sync", (event, channel, ...args) => {
-        //output(channel, JSON.stringify(args))
         if (channel == "___!boot") {
             event.returnValue = {
                 enabled: true,
