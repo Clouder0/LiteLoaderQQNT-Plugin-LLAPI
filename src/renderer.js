@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-10 20:13:55
+ * @LastEditTime: 2023-08-12 18:12:09
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -135,8 +135,14 @@ class EventEmitter {
 class Api extends EventEmitter {
     /**
      * @description 监听新消息
-     * window.LLAPI.on("new-messages", (message) => {
+     * LLAPI.on("new-messages", (message) => {
      *    console.log(message);
+     * })
+     */
+    /**
+     * @description 聊天界面消息更新
+     * LLAPI.on("dom-up-messages", (node) => {
+     *    console.log(node);
      * })
      */
     /**
@@ -145,11 +151,11 @@ class Api extends EventEmitter {
      *      event: 为事件
      *      target: 为右键位置的document
      *      msgIds: 为消息ID
-     * window.LLAPI.on("context-msg-menu", (event, target, msgIds) => {
+     * LLAPI.on("context-msg-menu", (event, target, msgIds) => {
      *    console.log(event);
      * })
      */
-        /**
+    /**
      * @description 添加QQ消息的右键菜单项目
      * @param {function} func 函数添加逻辑
      * @example func:
@@ -568,6 +574,9 @@ function onLoad() {
                         qmenu[0].forEach(listener => {
                             listener(node.previousSibling);
                         });
+                    }
+                    if (node.className == "ml-item") {
+                        apiInstance.emit("dom-up-messages", node);
                     }
                 });
             }

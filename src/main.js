@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-10 18:05:04
+ * @LastEditTime: 2023-08-12 18:12:25
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -28,8 +28,11 @@ function onBrowserWindowCreated(window, plugin) {
             window.webContents.send('friends-list-updated-main', args);
         } else if (args[1] && args[1][0]?.cmdName && args[1][0].cmdName === "nodeIKernelProfileListener/onProfileSimpleChanged") {
             window.webContents.send('user-info-list-main', args);
+        } else if (args[1] && args[1][0]?.cmdName && args[1][0].cmdName === "nodeIKernelUnitedConfigListener/onUnitedConfigUpdate") {
+            args[1][0].payload.configData.content = ""
+            args[1][0].payload.configData.isSwitchOn = false
         }
-        //output(channel, JSON.stringify(args))
+        //output(JSON.stringify(args));
         if (args[0]?.callbackId) {
             const id = args[0].callbackId;
             if (id in pendingCallbacks) {
@@ -46,7 +49,6 @@ function onBrowserWindowCreated(window, plugin) {
     }
     function ipc_message(_, status, name, ...args) {
         if (name !== "___!log" && args[0][1] && args[0][1][0] != "info") {
-            //output(JSON.stringify(args))
             const event = args[0][0];
             const data = args[0][1];
             if (data && data[0] === "changeRecentContacPeerUid") {
@@ -65,13 +67,12 @@ function onBrowserWindowCreated(window, plugin) {
         // 拦截函数调用
         apply(target, thisArg, argumentsList) {
             /**
-            if (argumentsList[3][1] && argumentsList[3][1][0] && argumentsList[3][1][0].includes("sendMsg")) {
+            if (argumentsList[3][1] && argumentsList[3][1][0] && argumentsList[3][1][0].includes("fetchGetHitEmotionsByWord")) {
                 // 消息内容数据
-                const content = argumentsList[3][1][1]
                 // 消息内容
                 //output(content.msgElements[0].textElement.content)
                 //content.msgElements[0].textElement.content = "测试"
-                output("ipc-msg被拦截", JSON.stringify(argumentsList[3]));
+                output("ipc-msg被拦截", argumentsList[3][1][1].inputWordInfo.word);
             }
              */
             ipc_message(...argumentsList)
