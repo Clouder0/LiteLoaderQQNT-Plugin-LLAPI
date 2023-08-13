@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-12 18:12:09
+ * @LastEditTime: 2023-08-13 19:39:40
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -571,8 +571,11 @@ function onLoad() {
                     }
                     // QQ菜单弹出
                     if (node?.previousSibling?.classList?.[0] == "q-context-menu"  && (node?.previousSibling?.innerText.includes("转发") || node?.previousSibling?.innerText.includes("转文字"))) {
+                        const ndoe_rect = node.previousSibling.getBoundingClientRect()
+                        const message_element = document.elementFromPoint(ndoe_rect.x, ndoe_rect.y)
+                        //?.closest(".msg-content-container")?.closest(".message");
                         qmenu[0].forEach(listener => {
-                            listener(node.previousSibling);
+                            listener(node.previousSibling, message_element);
                         });
                     }
                     if (node.className == "ml-item") {
