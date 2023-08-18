@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-08-05 13:44:33
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-11 16:00:23
+ * @LastEditTime: 2023-08-17 16:05:01
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -14,11 +14,11 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("LLAPI_PRE", {
     // 获取配置
     ipcRenderer_LL: ipcRenderer,
-    randomUUID_LL: () => ipcRenderer.invoke(
-        "LiteLoader.LLAPI_PRE.randomUUID_LL"
-    ),
     ipcRenderer_LL_on: (channel, callback) => {
         ipcRenderer.on(channel, callback)
+    },
+    ipcRenderer_LL_once: (channel, callback) => {
+        ipcRenderer.once(channel, callback)
     },
     set_id: (id, webContentsId) => ipcRenderer.invoke(
         "LiteLoader.LLAPI_PRE.set_id",

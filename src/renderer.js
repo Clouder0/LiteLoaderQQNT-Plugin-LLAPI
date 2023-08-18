@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-13 19:39:40
+ * @LastEditTime: 2023-08-18 10:40:11
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -10,7 +10,7 @@
 const plugin_path = LiteLoader.plugins.LLAPI.path.plugin;
 const ipcRenderer = LLAPI_PRE.ipcRenderer_LL;
 const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
-const randomUUID = LLAPI_PRE.randomUUID_LL;
+const ipcRenderer_once = LLAPI_PRE.ipcRenderer_LL_once;
 const set_id = LLAPI_PRE.set_id;
 const exists = LLAPI_PRE.exists;
 
@@ -67,8 +67,9 @@ class NTCallError extends Error {
 
 function ntCall(eventName, cmdName, args, isRegister = false) {
     return new Promise(async (resolve, reject) => {
-        const uuid = await randomUUID();
-        ipcRenderer_on(`LL_DOWN_${webContentsId}`, (event, data) => {
+        const uuid = crypto.randomUUID();
+        ipcRenderer_on(`LL_DOWN_${uuid}`, (event, data) => {
+            output(uuid, data)
             resolve(data);
         });
         /**
@@ -156,6 +157,92 @@ class Api extends EventEmitter {
      * })
      */
     /**
+     * @description 添加消息编辑栏的内容(未完成)
+     * @param {string|HTMLElement} message 消息内容
+     * @returns true/false
+     * @example
+     * LLAPI.add_editor(message)
+     * message:
+     * {
+     *      type: "text",
+     *      content: "一条消息"
+     * }
+     * {
+     *      type: "face",
+     *      id: "344", 
+     *      label: "[大怨种]", 
+     *      path: PATH
+     * }
+     * {
+     *      type: "img",
+     *      id: "344", 
+     *      label: "[大怨种]", 
+     *      path: PATH
+     * }
+     */
+    add_editor(message) {
+        try {
+            const select = window.getSelection()
+            const { anchorNode, anchorOffset } = select;
+            const parentNodeArray = Array.from(anchorNode.parentNode.childNodes);
+            const parentNode_index = parentNodeArray.indexOf(anchorNode); // 输入框光标选择元素的位置
+            const qqFace = constructor.constructFace("344", "[大怨种]", "appimg://H:/QQ/nt_qq/global/nt_data/Emoji/emoji-resource/sysface_res/apng/s344.png")
+            const msg_data = document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.getData()
+            const msg_list_re = msg_data.replace("<p>", "").replace("</p>", "")
+                                .split(/(<\/?(?:msg-img|msg-qqface)[^>]*><\/?(?:\/msg-img|\/msg-qqface)[^>]*>)/) // 分割消息
+            const msg_list = msg_list_re.filter(tag => tag) // 去除无效信息  && (tag != '</msg-img>') && tag!= '</msg-qqface>'
+            if (message.type == "face") {
+                message.content = constructor.constructFace(message.id, message.label, "appimg://H:/QQ/nt_qq/global/nt_data/Emoji/emoji-resource/sysface_res/apng/s344.png")
+                message.length = 1
+            }
+            if (parentNode_index < msg_list.length || (parentNode_index == msg_list.length && message.type == "text" && anchorOffset != msg_list[parentNode_index].length)) {
+                const check_index = anchorOffset==0?parentNode_index-1:parentNode_index
+                const part1 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? msg_list[check_index]:msg_list[check_index].substring(0, anchorOffset); // 分割光标位置的字符，前
+                const part2 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? "":msg_list[check_index].substring(anchorOffset); // 分割光标位置的字符，后
+                const part = [part1, message.content, part2] // 插入字符
+                msg_list.splice(check_index, 1, ...part)
+            } else {
+                msg_list.push(message.content)
+            }
+            output(`<p>${msg_list.join("")}</p>`)
+            document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.setData(`<p>${msg_list.join("")}</p>`)
+            // 关闭表情面板，并点击文本框
+            if (document.querySelector(".sticker-panel").style.display == '') {
+                document.querySelector('.icon-item[aria-label="表情"]').click()
+                select.selectAllChildren(document.querySelector(".ck.ck-content p").childNodes[parentNode_index])
+            }
+            // 光标纠正
+            for (var i = 0; i < message.length+anchorOffset; i++) {
+                select.modify("move", "forward", "character");
+            }
+            return true
+        } catch (error) {
+            return false
+        }
+    }
+    /**
+     * @description 设置消息编辑栏的内容
+     * @param {string|HTMLElement} message 消息内容
+     * @returns true/false
+     */
+    set_editor(message) {
+        try {
+            document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.setData(message)
+            return true
+        } catch (error) {
+            return false
+        }
+    }
+    /**
+     * @description 添加聊天消息(不保存)
+     * @param {string|HTMLElement} peer 对方的ID
+     * @param {string|HTMLElement} message 消息内容
+     * @returns true/false
+     */
+    add_message_list(peer, message) {
+        LLAPI_PRE.ipcRenderer_LL.send("___!add_message_list", peer, message);
+    }
+    /**
      * @description 添加QQ消息的右键菜单项目
      * @param {function} func 函数添加逻辑
      * @example func:
@@ -212,6 +299,7 @@ class Api extends EventEmitter {
                 peer: destructor.destructPeer(peer),
                 msgElements: await Promise.all(
                     elements.map(async (element) => {
+                        output(element)
                         if (element.type == "text") return destructor.destructTextElement(element);
                         else if (element.type == "image") return destructor.destructImageElement(element, await media.prepareImageElement(element.file));
                         else if (element.type == "face") return destructor.destructFaceElement(element);
@@ -405,6 +493,28 @@ class Constructor {
             raw: group,
         };
     }
+    constructFace(id, label, path) {
+        // 创建 msg-qqface 元素
+        const msgQQFace = document.createElement('msg-qqface');
+        // 设置 data 属性的值
+        const dataValue = {
+            type: 'qqFace',
+            id: id,
+            label: label,
+            path: path,
+            animationData: {
+                packId: '1',
+                stickerId: '28',
+                stickerType: 1,
+                sourceType: 1,
+                resultId: '',
+                superisedId: '',
+                randomType: 1
+            }
+        };
+        msgQQFace.setAttribute('data', JSON.stringify(dataValue));
+        return msgQQFace.outerHTML;
+    }
     test() {
         console.log("test");
     }
@@ -464,6 +574,137 @@ class Destructor {
             peerUid: peer.uid,
             guildId: "",
         };
+    }
+    des() {
+        return [
+            {
+                "type": "request",
+                "eventName": "ns-ntApi-2"
+            },
+            [
+                {
+                "cmdName": "nodeIKernelMsgListener/onRecvMsg",
+                "cmdType": "event",
+                "payload": {
+                    "msgList": [
+                    {
+                        "msgId": "7268161886249232473",
+                        "msgRandom": "1669875297",
+                        "msgSeq": "29",
+                        "cntSeq": "0",
+                        "chatType": 1,
+                        "msgType": 2,
+                        "subMsgType": 1,
+                        "sendType": 0,
+                        "senderUid":"0",
+                        "peerUid":"0",
+                        "channelId": "",
+                        "guildId": "",
+                        "guildCode": "0",
+                        "fromUid": "0",
+                        "fromAppid": "0",
+                        "msgTime": "1692250510",
+                        "msgMeta": "0x",
+                        "sendStatus": 2,
+                        "sendMemberName": "",
+                        "sendNickName": "",
+                        "guildName": "",
+                        "channelName": "",
+                        "elements": [
+                        {
+                            "elementType": 1,
+                            "elementId": "7268161886249232474",
+                            "extBufForUI": "0x",
+                            "textElement": {
+                            "content": "测试1111",
+                            "atType": 0,
+                            "atUid": "0",
+                            "atTinyId": "0",
+                            "atNtUid": "",
+                            "subElementType": 0,
+                            "atChannelId": "0",
+                            "atRoleId": "0",
+                            "atRoleColor": 0,
+                            "atRoleName": "",
+                            "needNotify": 0
+                            },
+                            "faceElement": null,
+                            "marketFaceElement": null,
+                            "replyElement": null,
+                            "picElement": null,
+                            "pttElement": null,
+                            "videoElement": null,
+                            "grayTipElement": null,
+                            "arkElement": null,
+                            "fileElement": null,
+                            "liveGiftElement": null,
+                            "markdownElement": null,
+                            "structLongMsgElement": null,
+                            "multiForwardMsgElement": null,
+                            "giphyElement": null,
+                            "walletElement": null,
+                            "inlineKeyboardElement": null,
+                            "textGiftElement": null,
+                            "calendarElement": null,
+                            "yoloGameResultElement": null,
+                            "avRecordElement": null
+                        }
+                        ],
+                        "records": [
+                        
+                        ],
+                        "emojiLikesList": [
+                        
+                        ],
+                        "commentCnt": "0",
+                        "directMsgFlag": 0,
+                        "directMsgMembers": [
+                        
+                        ],
+                        "peerName": "",
+                        "freqLimitInfo": null,
+                        "editable": false,
+                        "avatarMeta": "",
+                        "avatarPendant": "",
+                        "feedId": "",
+                        "roleId": "0",
+                        "timeStamp": "0",
+                        "clientIdentityInfo": null,
+                        "isImportMsg": false,
+                        "atType": 0,
+                        "roleType": 0,
+                        "fromChannelRoleInfo": {
+                        "roleId": "0",
+                        "name": "",
+                        "color": 0
+                        },
+                        "fromGuildRoleInfo": {
+                        "roleId": "0",
+                        "name": "",
+                        "color": 0
+                        },
+                        "levelRoleInfo": {
+                        "roleId": "0",
+                        "name": "",
+                        "color": 0
+                        },
+                        "recallTime": "0",
+                        "isOnlineMsg": true,
+                        "generalFlags": "0x",
+                        "clientSeq": "38025",
+                        "fileGroupSize": null,
+                        "foldingInfo": null,
+                        "nameType": 0,
+                        "avatarFlag": 0,
+                        "anonymousExtInfo": null,
+                        "personalMedal": null,
+                        "roleManagementTag": null
+                    }
+                    ]
+                }
+                }
+            ]
+        ]
     }
 }
 const destructor = new Destructor();
@@ -551,6 +792,13 @@ function monitor_qmenu(event) {
 }
 
 function onLoad() {
+    // 扩展 CanvasRenderingContext2D 原型链
+    CanvasRenderingContext2D.prototype._originalDrawFunction = CanvasRenderingContext2D.prototype.drawImage;
+
+    CanvasRenderingContext2D.prototype.drawImage = function (image, ...args) {
+        output('Drawing with custom interception:', image);
+        return this._originalDrawFunction.call(this, image, ...args);
+    };
     const observer = new MutationObserver((mutationsList, observer) => {
         // 遍历每个变化
         for (const mutation of mutationsList) {
@@ -568,6 +816,15 @@ function onLoad() {
                         node.querySelectorAll('.image.market-face-element').forEach((img_node) => {
                             img_node.addEventListener('contextmenu', monitor_qmenu)
                         })
+                        /**
+                        const original = Element.prototype
+                        Element.prototype = new Proxy(original, {
+                            get(target, property) {
+                                output(property)
+                                return target[property];
+                            }
+                        });
+                         */
                     }
                     // QQ菜单弹出
                     if (node?.previousSibling?.classList?.[0] == "q-context-menu"  && (node?.previousSibling?.innerText.includes("转发") || node?.previousSibling?.innerText.includes("转文字"))) {
@@ -578,6 +835,7 @@ function onLoad() {
                             listener(node.previousSibling, message_element);
                         });
                     }
+                    // QQ消息更新
                     if (node.className == "ml-item") {
                         apiInstance.emit("dom-up-messages", node);
                     }
