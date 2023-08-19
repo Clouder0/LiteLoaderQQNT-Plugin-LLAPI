@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-19 11:29:21
+ * @LastEditTime: 2023-08-19 14:13:33
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -364,7 +364,7 @@ class Api extends EventEmitter {
     }
     /**
      * @description 获取历史聊天记录
-     * @param {number} peer 对方Peer
+     * @param {number} peer 对象的Peer
      * @param {string} startMsgId 起始消息ID
      * @returns
      */
