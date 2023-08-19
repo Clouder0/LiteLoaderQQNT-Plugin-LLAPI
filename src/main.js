@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-18 10:46:05
+ * @LastEditTime: 2023-08-19 14:44:14
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -34,7 +34,6 @@ function onBrowserWindowCreated(window, plugin) {
         if (args[0]?.callbackId) {
             const id = args[0].callbackId;
             if (id in pendingCallbacks) {
-                output(pendingCallbacks)
                 window.webContents.send(pendingCallbacks[id], args[1]);
                 delete pendingCallbacks[id];
             }
