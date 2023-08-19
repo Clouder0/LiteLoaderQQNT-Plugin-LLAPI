@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-18 10:41:17
+ * @LastEditTime: 2023-08-18 10:46:05
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -58,9 +58,6 @@ function onBrowserWindowCreated(window, plugin) {
                     guildId: "",
                 }
                 window.webContents.send('set_message-main');
-            }
-            if (data && data[0] === "nodeIKernelMsgService/sendMsg") {
-                output(JSON.stringify(data))
             }
         }
         if (name === "___!add_message_list") {

@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-18 10:40:11
+ * @LastEditTime: 2023-08-19 11:29:21
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -136,12 +136,14 @@ class EventEmitter {
 class Api extends EventEmitter {
     /**
      * @description 监听新消息
+     * @example
      * LLAPI.on("new-messages", (message) => {
      *    console.log(message);
      * })
      */
     /**
      * @description 聊天界面消息更新
+     * @example
      * LLAPI.on("dom-up-messages", (node) => {
      *    console.log(node);
      * })
@@ -185,7 +187,7 @@ class Api extends EventEmitter {
             const select = window.getSelection()
             const { anchorNode, anchorOffset } = select;
             const parentNodeArray = Array.from(anchorNode.parentNode.childNodes);
-            const parentNode_index = parentNodeArray.indexOf(anchorNode); // 输入框光标选择元素的位置
+            var parentNode_index = parentNodeArray.indexOf(anchorNode); // 输入框光标选择元素的位置
             const qqFace = constructor.constructFace("344", "[大怨种]", "appimg://H:/QQ/nt_qq/global/nt_data/Emoji/emoji-resource/sysface_res/apng/s344.png")
             const msg_data = document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.getData()
             const msg_list_re = msg_data.replace("<p>", "").replace("</p>", "")
@@ -195,25 +197,36 @@ class Api extends EventEmitter {
                 message.content = constructor.constructFace(message.id, message.label, "appimg://H:/QQ/nt_qq/global/nt_data/Emoji/emoji-resource/sysface_res/apng/s344.png")
                 message.length = 1
             }
-            if (parentNode_index < msg_list.length || (parentNode_index == msg_list.length && message.type == "text" && anchorOffset != msg_list[parentNode_index].length)) {
-                const check_index = anchorOffset==0?parentNode_index-1:parentNode_index
-                const part1 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? msg_list[check_index]:msg_list[check_index].substring(0, anchorOffset); // 分割光标位置的字符，前
-                const part2 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? "":msg_list[check_index].substring(anchorOffset); // 分割光标位置的字符，后
-                const part = [part1, message.content, part2] // 插入字符
-                msg_list.splice(check_index, 1, ...part)
-            } else {
-                msg_list.push(message.content)
-            }
-            output(`<p>${msg_list.join("")}</p>`)
-            document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.setData(`<p>${msg_list.join("")}</p>`)
-            // 关闭表情面板，并点击文本框
-            if (document.querySelector(".sticker-panel").style.display == '') {
-                document.querySelector('.icon-item[aria-label="表情"]').click()
-                select.selectAllChildren(document.querySelector(".ck.ck-content p").childNodes[parentNode_index])
-            }
-            // 光标纠正
-            for (var i = 0; i < message.length+anchorOffset; i++) {
-                select.modify("move", "forward", "character");
+            if (anchorNode.textContent == '⁠⁠⁠⁠⁠⁠⁠') {
+                //msg_list.splice(parentNode_index, 0, "&NoBreak;")
+                parentNode_index--;
+                if (parentNode_index < msg_list.length) {
+                    const check_index = anchorOffset==0?parentNode_index-1:parentNode_index
+                    const part1 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? msg_list[check_index]:msg_list[check_index].substring(0, anchorOffset); // 分割光标位置的字符，前
+                    const part2 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? "":msg_list[check_index].substring(anchorOffset); // 分割光标位置的字符，后
+                    const part = [part1, message.content, part2] // 插入字符
+                    output(msg_list[check_index])
+                    msg_list.splice(check_index, 1, "&NoBreak;&NoBreak;&NoBreak;&NoBreak;&NoBreak;&NoBreak;&NoBreak;")
+                    output(msg_list)
+                    msg_list.splice(check_index, 1, ...part)
+                    output(msg_list)
+                } else {
+                    msg_list.push(message.content)
+                }
+                document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.setData(`<p>${msg_list.join("")}</p>`)
+                // 关闭表情面板，并点击文本框
+                if (document.querySelector(".sticker-panel").style.display == '') {
+                    document.querySelector('.icon-item[aria-label="表情"]').click()
+                }
+                //output(document.querySelector(".ck.ck-content p").childNodes)
+                //output(document.querySelector(".ck.ck-content p").childNodes[parentNode_index+1])
+                select.selectAllChildren(document.querySelector(".ck.ck-content p").childNodes[parentNode_index+1])
+                /**
+                // 光标纠正
+                for (var i = 0; i < message.length; i++) {
+                    select.modify("move", "forward", "character");
+                }
+                 */
             }
             return true
         } catch (error) {
@@ -234,7 +247,7 @@ class Api extends EventEmitter {
         }
     }
     /**
-     * @description 添加聊天消息(不保存)
+     * @description 添加聊天消息(不保存)(未完成)
      * @param {string|HTMLElement} peer 对方的ID
      * @param {string|HTMLElement} message 消息内容
      * @returns true/false
@@ -767,7 +780,7 @@ const media = new Media();
 function monitor_qmenu(event) {
     let { target } = event
     const { classList } = target
-    if (classList?.[0] !== "q-context-menu" && (qContextMenu.innerText.includes("转发") || qContextMenu.innerText.includes("转文字"))) {
+    if (classList?.[0] !== "q-context-menu" && typeof qContextMenu !== "undefined" && (qContextMenu.innerText.includes("转发") || qContextMenu.innerText.includes("转文字"))) {
         // 发送context-menu事件
         let msgIds;
         // 尝试10次获取msgIds
