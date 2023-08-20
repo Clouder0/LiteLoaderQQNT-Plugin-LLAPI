@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-19 14:13:33
+ * @LastEditTime: 2023-08-20 13:56:35
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -240,11 +240,21 @@ class Api extends EventEmitter {
      */
     set_editor(message) {
         try {
+            const select = window.getSelection()
             document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.setData(message)
+            const msg_list = document.querySelector(".ck.ck-content p")
+            select.selectAllChildren(msg_list.childNodes[msg_list.childNodes.length-1])
             return true
         } catch (error) {
             return false
         }
+    }
+    /**
+     * @description 获取消息编辑栏的内容
+     * @returns {string|HTMLElement} message 消息内容
+     */
+    get_editor() {
+        return document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.getData()
     }
     /**
      * @description 添加聊天消息(不保存)(未完成)

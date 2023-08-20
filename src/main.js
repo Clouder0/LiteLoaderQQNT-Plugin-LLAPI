@@ -19,7 +19,6 @@ const pendingCallbacks = {};
 function onBrowserWindowCreated(window, plugin) {
     const original_send = (window.webContents.__qqntim_original_object && window.webContents.__qqntim_original_object.send) || window.webContents.send;
     const patched_send = (channel, ...args) => {
-        let id
         if (args?.[1]?.[0]?.cmdName === "nodeIKernelMsgListener/onRecvMsg") {
             window.webContents.send('new_message-main', args);
         } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelGroupListener/onGroupListUpdate") {
