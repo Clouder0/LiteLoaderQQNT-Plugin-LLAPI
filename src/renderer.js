@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-20 13:56:35
+ * @LastEditTime: 2023-08-21 21:33:17
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -13,18 +13,42 @@ const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
 const ipcRenderer_once = LLAPI_PRE.ipcRenderer_LL_once;
 const set_id = LLAPI_PRE.set_id;
 const exists = LLAPI_PRE.exists;
-
 const qmenu = []
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function customInspect(obj, depth = 0) {
+    if (depth > 3) {
+      return '...'; // 控制递归深度
+    }
+    
+    if (typeof obj !== 'object' || obj === null) {
+      return String(obj);
+    }
+    
+    if (Array.isArray(obj)) {
+      const elements = obj.map((item) => customInspect(item, depth + 1)).join(', ');
+      return `[${elements}]`;
+    }
+    
+    const entries = Object.entries(obj)
+      .map(([key, value]) => `${key}: ${customInspect(value, depth + 1)}`)
+      .join(', ');
+    
+    return `{${entries}}`;
+}
+
+function printObject(object) {
+    return customInspect(object, null);
+}
+
 export function patchLogger() {
-    const log = (level, ...args) => {
+    const log = async (level, ...args) => {
         const serializedArgs = [];
         for (const arg of args) {
-            serializedArgs.push(typeof arg == "string" ? arg: arg?.toString());
+            serializedArgs.push(typeof arg == "string" ? arg: await printObject(arg)); // arg?.toString()
         }
         LLAPI_PRE.ipcRenderer_LL.send("___!log", level, ...serializedArgs);
     };
@@ -69,7 +93,6 @@ function ntCall(eventName, cmdName, args, isRegister = false) {
     return new Promise(async (resolve, reject) => {
         const uuid = crypto.randomUUID();
         ipcRenderer_on(`LL_DOWN_${uuid}`, (event, data) => {
-            output(uuid, data)
             resolve(data);
         });
         /**
@@ -159,7 +182,7 @@ class Api extends EventEmitter {
      * })
      */
     /**
-     * @description 添加消息编辑栏的内容(未完成)
+     * @description 添加消息编辑栏的内容(实验性)
      * @param {string|HTMLElement} message 消息内容
      * @returns true/false
      * @example
@@ -170,64 +193,60 @@ class Api extends EventEmitter {
      *      content: "一条消息"
      * }
      * {
-     *      type: "face",
+     *      type: "qqFace",
      *      id: "344", 
      *      label: "[大怨种]", 
-     *      path: PATH
+     *      path: "appimg://H:/QQ/nt_qq/global/nt_data/Emoji/emoji-resource/sysface_res/apng/s344.png"
      * }
      * {
-     *      type: "img",
-     *      id: "344", 
-     *      label: "[大怨种]", 
-     *      path: PATH
+     *      type: "pic",
+     *      src: PATH, 
+     *      picSubType: 0, 
      * }
      */
     add_editor(message) {
         try {
-            const select = window.getSelection()
-            const { anchorNode, anchorOffset } = select;
-            const parentNodeArray = Array.from(anchorNode.parentNode.childNodes);
-            var parentNode_index = parentNodeArray.indexOf(anchorNode); // 输入框光标选择元素的位置
-            const qqFace = constructor.constructFace("344", "[大怨种]", "appimg://H:/QQ/nt_qq/global/nt_data/Emoji/emoji-resource/sysface_res/apng/s344.png")
-            const msg_data = document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.getData()
-            const msg_list_re = msg_data.replace("<p>", "").replace("</p>", "")
-                                .split(/(<\/?(?:msg-img|msg-qqface)[^>]*><\/?(?:\/msg-img|\/msg-qqface)[^>]*>)/) // 分割消息
-            const msg_list = msg_list_re.filter(tag => tag) // 去除无效信息  && (tag != '</msg-img>') && tag!= '</msg-qqface>'
-            if (message.type == "face") {
-                message.content = constructor.constructFace(message.id, message.label, "appimg://H:/QQ/nt_qq/global/nt_data/Emoji/emoji-resource/sysface_res/apng/s344.png")
-                message.length = 1
-            }
-            if (anchorNode.textContent == '⁠⁠⁠⁠⁠⁠⁠') {
-                //msg_list.splice(parentNode_index, 0, "&NoBreak;")
-                parentNode_index--;
-                if (parentNode_index < msg_list.length) {
-                    const check_index = anchorOffset==0?parentNode_index-1:parentNode_index
-                    const part1 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? msg_list[check_index]:msg_list[check_index].substring(0, anchorOffset); // 分割光标位置的字符，前
-                    const part2 = (msg_list[check_index].includes("msg-qqface")||msg_list[check_index].includes("msg-img"))? "":msg_list[check_index].substring(anchorOffset); // 分割光标位置的字符，后
-                    const part = [part1, message.content, part2] // 插入字符
-                    output(msg_list[check_index])
-                    msg_list.splice(check_index, 1, "&NoBreak;&NoBreak;&NoBreak;&NoBreak;&NoBreak;&NoBreak;&NoBreak;")
-                    output(msg_list)
-                    msg_list.splice(check_index, 1, ...part)
-                    output(msg_list)
-                } else {
-                    msg_list.push(message.content)
+            let emojiElement
+            const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance;
+            const editorModel = ckeditorInstance.model; // 获取编辑器的 model
+            const editorSelection = editorModel.document.selection; // 获取光标的当前选择
+            const position = editorSelection.getFirstPosition(); // 获取当前光标的位置
+            editorModel.change(writer => {
+                if (message.type == "qqFace") {
+                    const data = {
+                        type: "qqFace",
+                        id: message.id,
+                        label: message.label,
+                        path: message.path,
+                        animationData: {
+                            packId: "1",
+                            stickerId: "28",
+                            stickerType: 1,
+                            sourceType: 1,
+                            resultId: "",
+                            superisedId: "",
+                            randomType: 1
+                        }
+                    }
+                    const emojiData = {
+                        data: JSON.stringify(data)
+                    }
+                    emojiElement = writer.createElement('msg-qqface', emojiData);
+                } else if (message.type == "pic") {
+                    const data = {
+                        "type": "pic",
+                        "src": message.src,
+                        "picSubType": 0
+                    }
+                    const emojiData = {
+                        data: JSON.stringify(data)
+                    }
+                    emojiElement = writer.createElement('msg-img', emojiData);
+                } else if (message.type == "text") {
+                    emojiElement = message.content
                 }
-                document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.setData(`<p>${msg_list.join("")}</p>`)
-                // 关闭表情面板，并点击文本框
-                if (document.querySelector(".sticker-panel").style.display == '') {
-                    document.querySelector('.icon-item[aria-label="表情"]').click()
-                }
-                //output(document.querySelector(".ck.ck-content p").childNodes)
-                //output(document.querySelector(".ck.ck-content p").childNodes[parentNode_index+1])
-                select.selectAllChildren(document.querySelector(".ck.ck-content p").childNodes[parentNode_index+1])
-                /**
-                // 光标纠正
-                for (var i = 0; i < message.length; i++) {
-                    select.modify("move", "forward", "character");
-                }
-                 */
-            }
+                writer.insert(emojiElement, position);
+            });
             return true
         } catch (error) {
             return false
@@ -322,7 +341,6 @@ class Api extends EventEmitter {
                 peer: destructor.destructPeer(peer),
                 msgElements: await Promise.all(
                     elements.map(async (element) => {
-                        output(element)
                         if (element.type == "text") return destructor.destructTextElement(element);
                         else if (element.type == "image") return destructor.destructImageElement(element, await media.prepareImageElement(element.file));
                         else if (element.type == "face") return destructor.destructFaceElement(element);
@@ -394,6 +412,23 @@ class Api extends EventEmitter {
         } catch {
             return [];
         }
+    }
+    /**
+     * @description 语音转文字(实验性)
+     * @param {string} msgId 消息ID
+     * @param {number} peer 对象的Peer
+     * @param {MessageElement[]} elements
+     */
+    async Ptt2Text(msgId, peer, elements) {
+        const msgElement = JSON.parse(JSON.stringify(elements))
+        await ntCall("ns-ntApi", "nodeIKernelMsgService/translatePtt2Text", [
+            {
+                msgId: msgId,
+                peer: destructor.destructPeer(peer),
+                msgElement: msgElement
+            },
+            null
+        ]);
     }
     test() {
         console.log("test");
@@ -788,25 +823,31 @@ class Media {
 const media = new Media();
 
 function monitor_qmenu(event) {
+    /**
+    const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance;
+    const originalset = ckeditorInstance.data.set;
+    const patchedset = new Proxy(originalset, {
+        apply(target, thisArg, argumentsList) {
+            console.log(target, thisArg, argumentsList);
+            return Reflect.apply(target, thisArg, argumentsList);
+        }
+    });
+    ckeditorInstance.data.set = patchedset;
+    
+    const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance;
+    const originalApplyOperation = ckeditorInstance.editing.model.applyOperation;
+    const patchedApplyOperation = new Proxy(originalApplyOperation, {
+        apply(target, thisArg, argumentsList) {
+            console.log(target, thisArg, argumentsList);
+            return Reflect.apply(target, thisArg, argumentsList);
+        }
+    });
+    ckeditorInstance.editing.model.applyOperation = patchedApplyOperation;
+     */
     let { target } = event
     const { classList } = target
     if (classList?.[0] !== "q-context-menu" && typeof qContextMenu !== "undefined" && (qContextMenu.innerText.includes("转发") || qContextMenu.innerText.includes("转文字"))) {
-        // 发送context-menu事件
-        let msgIds;
-        // 尝试10次获取msgIds
-        for (let i = 0; i < 10; i++) {
-            msgIds = target.id;
-            if (!msgIds) {
-                target = target.offsetParent;
-            } else {
-                break; // 获取到msgIds退出循环
-            }
-        }
-        if (msgIds.includes("ark-view-ml-root-")) {
-            msgIds = msgIds.replace("ark-view-ml-root-", "");
-        } else {
-            msgIds = msgIds.split("-")[0];
-        }
+        const msgIds = target.closest(".ml-item")?.id
         if (qContextMenu.innerText.includes("转文字")) {
             target.classList = ["ptt-element__progress"]
         }
@@ -816,12 +857,14 @@ function monitor_qmenu(event) {
 
 function onLoad() {
     // 扩展 CanvasRenderingContext2D 原型链
+    /**
     CanvasRenderingContext2D.prototype._originalDrawFunction = CanvasRenderingContext2D.prototype.drawImage;
 
     CanvasRenderingContext2D.prototype.drawImage = function (image, ...args) {
         output('Drawing with custom interception:', image);
         return this._originalDrawFunction.call(this, image, ...args);
     };
+    */
     const observer = new MutationObserver((mutationsList, observer) => {
         // 遍历每个变化
         for (const mutation of mutationsList) {
@@ -850,7 +893,7 @@ function onLoad() {
                          */
                     }
                     // QQ菜单弹出
-                    if (node?.previousSibling?.classList?.[0] == "q-context-menu"  && (node?.previousSibling?.innerText.includes("转发") || node?.previousSibling?.innerText.includes("转文字"))) {
+                    if (node?.previousSibling?.classList?.[0] == "q-context-menu"  && (node?.previousSibling?.innerText.includes("转发") || node?.previousSibling?.innerText.includes("转文字")) && qmenu.length > 0) {
                         const ndoe_rect = node.previousSibling.getBoundingClientRect()
                         const message_element = document.elementFromPoint(ndoe_rect.x, ndoe_rect.y)
                         //?.closest(".msg-content-container")?.closest(".message");

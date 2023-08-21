@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-19 14:44:14
+ * @LastEditTime: 2023-08-21 21:14:15
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -10,10 +10,19 @@
 
 const { ipcMain } = require("electron");
 const { existsSync } = require("fs");
+const util = require('util');
 
 let peer;
 let i=0;
 const pendingCallbacks = {};
+
+function printObject(object) {
+    return util.inspect(object, {
+        compact: true,
+        depth: null,
+        showHidden: true
+    });
+}
 
 // 创建窗口时触发
 function onBrowserWindowCreated(window, plugin) {
@@ -29,7 +38,9 @@ function onBrowserWindowCreated(window, plugin) {
             window.webContents.send('user-info-list-main', args);
         } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelRecentContactListener/onRecentContactListChanged") {
         }
-        // output(channel, JSON.stringify(args));
+        if (!channel.includes("LiteLoader")) {
+            // output(channel, JSON.stringify(args));
+        }
         if (args[0]?.callbackId) {
             const id = args[0].callbackId;
             if (id in pendingCallbacks) {
@@ -57,11 +68,11 @@ function onBrowserWindowCreated(window, plugin) {
                 }
                 window.webContents.send('set_message-main');
             }
+            //output(JSON.stringify(args))
         }
         if (name === "___!add_message_list") {
             const peer = args[0][0]
             const message = args[0][1]
-            output(peer, message)
             const data = [
                 {
                     "type": "request",
@@ -192,7 +203,6 @@ function onBrowserWindowCreated(window, plugin) {
                 ]
             ]
             i++;
-            output(i)
             original_send.call(window.webContents, "IPC_DOWN_2", ...data);
             const data1 = [
                 {
