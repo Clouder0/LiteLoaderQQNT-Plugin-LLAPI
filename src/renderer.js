@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-22 15:15:13
+ * @LastEditTime: 2023-08-22 22:38:44
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -74,7 +74,6 @@ export let { webContentsId } = ipcRenderer.sendSync("___!boot");
 if (!webContentsId) {
     webContentsId = "2"
 }
-let old_href;
 
 function output(...args) {
     console.log("\x1b[32m[LLAPI-渲染]\x1b[0m", ...args);
@@ -900,13 +899,13 @@ function onLoad() {
                 });
             }
         }
-        if (location.href != old_href) {
-            old_href = location.href
-            apiInstance.emit("change_href", location)
-        }
     });
     observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener('contextmenu', monitor_qmenu)
+    navigation.addEventListener("navigatesuccess", function(event) {
+        apiInstance.emit("change_href", location)
+    });
+    apiInstance.emit("change_href", location)
 }
 
 const elements = new WeakMap();
