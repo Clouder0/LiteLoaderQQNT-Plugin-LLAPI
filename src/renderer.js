@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-21 21:33:17
+ * @LastEditTime: 2023-08-22 15:15:13
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -74,6 +74,7 @@ export let { webContentsId } = ipcRenderer.sendSync("___!boot");
 if (!webContentsId) {
     webContentsId = "2"
 }
+let old_href;
 
 function output(...args) {
     console.log("\x1b[32m[LLAPI-渲染]\x1b[0m", ...args);
@@ -882,15 +883,6 @@ function onLoad() {
                         node.querySelectorAll('.image.market-face-element').forEach((img_node) => {
                             img_node.addEventListener('contextmenu', monitor_qmenu)
                         })
-                        /**
-                        const original = Element.prototype
-                        Element.prototype = new Proxy(original, {
-                            get(target, property) {
-                                output(property)
-                                return target[property];
-                            }
-                        });
-                         */
                     }
                     // QQ菜单弹出
                     if (node?.previousSibling?.classList?.[0] == "q-context-menu"  && (node?.previousSibling?.innerText.includes("转发") || node?.previousSibling?.innerText.includes("转文字")) && qmenu.length > 0) {
@@ -907,6 +899,10 @@ function onLoad() {
                     }
                 });
             }
+        }
+        if (location.href != old_href) {
+            old_href = location.href
+            apiInstance.emit("change_href", location)
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
