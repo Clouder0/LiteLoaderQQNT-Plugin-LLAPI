@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-08-22 22:38:44
+ * @LastEditTime: 2023-09-01 00:02:06
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -14,6 +14,7 @@ const ipcRenderer_once = LLAPI_PRE.ipcRenderer_LL_once;
 const set_id = LLAPI_PRE.set_id;
 const exists = LLAPI_PRE.exists;
 const qmenu = []
+let first_ckeditorInstance = false
 
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -308,7 +309,7 @@ class Api extends EventEmitter {
     }
     /**
      * @description 获取当前用户的详细信息
-     * @param {number} uid
+     * @param {number} uid QQ号
      * @returns nickName: 名称, age: 年龄等
      */
     async getUserInfo(uid) {
@@ -590,6 +591,30 @@ class Destructor {
                 atUid: "",
                 atTinyId: "",
                 atNtUid: "",
+            },
+        };
+    }
+    
+    destructXmlElement(element) {
+        return {
+            elementType: 8,
+            elementId: "",
+            grayTipElement: {
+                subElementType: 12,
+                extBufForUI: "0x",
+                xmlElement: {
+                    busiType: "1",
+                    busiId: "10145",
+                    c2cType: 0,
+                    serviceType: 0,
+                    ctrlFlag: 7,
+                    content: "<gtip align=\"center\"><qq uin=\"u_4B8ETD3ySVv--pNnQAupOA\" col=\"3\" jp=\"1042633805\" /><nor txt=\"邀请\"/><qq uin=\"u_iDVsVV8gskSMTB51hSDGVg\" col=\"3\" jp=\"1754196821\" /> <nor txt=\"加入了群聊。\"/> </gtip>",
+                    templId: "10179",
+                    seqId: "1313801018",
+                    templParam: {},
+                    pbReserv: "0x",
+                    members: {}
+                },
             },
         };
     }
@@ -895,6 +920,20 @@ function onLoad() {
                     // QQ消息更新
                     if (node.className == "ml-item") {
                         apiInstance.emit("dom-up-messages", node);
+                    }
+                    const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable")?.ckeditorInstance;
+                    if (!first_ckeditorInstance && ckeditorInstance) {
+                        ckeditorInstance.model.document.on('change', (event, data) => {
+                            data.operations.forEach((item)=>{
+                                item = item.toJSON()
+                                if(item?.baseVersion){
+                                    if(item.nodes?.[0]?.data) {
+                                        console.log(item.nodes[0].data)
+                                    }
+                                }
+                            })
+                        });
+                        first_ckeditorInstance = true
                     }
                 });
             }
