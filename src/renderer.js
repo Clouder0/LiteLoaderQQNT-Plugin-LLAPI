@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-09-01 00:02:06
+ * @LastEditTime: 2023-10-09 08:46:03
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -431,8 +431,22 @@ class Api extends EventEmitter {
             null
         ]);
     }
-    test() {
-        console.log("test");
+    /**
+     * @description 获取群聊成员ID
+     * @param {string} groupId 群聊ID
+     * @param {number} num 数量
+     */
+    async getGroupMemberList(groupId, num=30) {
+        return await ntCall("ns-ntApi", "nodeIKernelGroupService/getNextMemberList", [
+            {
+                sceneId: groupId,
+                num: num
+            },
+            null
+        ]);
+    }
+    async test(ee="437136493_groupMemberList_MainWindow") {
+        console.log(await apiInstance.getGroupMemberList(ee, 30));
     }
 }
 
@@ -918,7 +932,7 @@ function onLoad() {
                         });
                     }
                     // QQ消息更新
-                    if (node.className == "ml-item") {
+                    if (node.className == "ml-item" || node.className == "message vue-component") {
                         apiInstance.emit("dom-up-messages", node);
                     }
                     const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable")?.ckeditorInstance;
