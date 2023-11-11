@@ -7,6 +7,7 @@
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
  */
+
 const plugin_path = LiteLoader.plugins.LLAPI.path.plugin;
 const ipcRenderer = LLAPI_PRE.ipcRenderer_LL;
 const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
@@ -336,19 +337,30 @@ class Api extends EventEmitter {
         }]
      */
     async sendMessage(peer, elements) {
-        ntCall("ns-ntApi", "nodeIKernelMsgService/sendMsg", [
+        return ntCall("ns-ntApi", "nodeIKernelMsgService/sendMsg", [
             {
                 msgId: "0",
                 peer: destructor.destructPeer(peer),
                 msgElements: await Promise.all(
                     elements.map(async (element) => {
                         if (element.type == "text") return destructor.destructTextElement(element);
+                        else if (element.type == "reply") return destructor.destructReplyElement(element);
                         else if (element.type == "image") return destructor.destructImageElement(element, await media.prepareImageElement(element.file));
+                        else if (element.type == "voice") return destructor.destructPttElement(element, await media.prepareVoiceElement(element.file));
                         else if (element.type == "face") return destructor.destructFaceElement(element);
                         else if (element.type == "raw") return destructor.destructRawElement(element);
                         else return null;
                     }),
                 ),
+            },
+            null,
+        ]);
+    }
+    async recallMessage(peer, msgIds) {
+        ntCall("ns-ntApi", "nodeIKernelMsgService/recallMsg", [
+            {
+                msgIds,
+                peer: destructor.destructPeer(peer),
             },
             null,
         ]);
@@ -437,9 +449,13 @@ class Api extends EventEmitter {
      * @param {number} num 数量
      */
     async getGroupMemberList(groupId, num=30) {
+        let sceneId = await ntCall("ns-ntApi", "nodeIKernelGroupService/createMemberListScene", [{
+                groupCode: groupId,
+                scene: "groupMemberList_MainWindow"
+            }])
         return await ntCall("ns-ntApi", "nodeIKernelGroupService/getNextMemberList", [
             {
-                sceneId: groupId,
+                sceneId: sceneId,
                 num: num
             },
             null
@@ -601,10 +617,10 @@ class Destructor {
             elementId: "",
             textElement: {
                 content: element.content,
-                atType: 0,
-                atUid: "",
+                atType: element.atType || 0,
+                atUid: element.atUid || "",
                 atTinyId: "",
-                atNtUid: "",
+                atNtUid: element.atNtUid,
             },
         };
     }
@@ -639,6 +655,26 @@ class Destructor {
             elementId: "",
             picElement: picElement,
         };
+    }
+
+    destructPttElement(element, pttElement) {
+        return {
+            elementType: 4,
+            elementId: "",
+            pttElement
+        }
+    }
+    destructReplyElement(element) {
+        return {
+            elementType: 7,
+            elementId: "",
+            replyElement: {
+                replayMsgSeq: element.msgSeq, // raw.msgSeq
+                replayMsgId: element.msgId,  // raw.msgId
+                senderUin: element.senderUin,
+                senderUinStr: element.senderUinStr,
+            }
+        }
     }
     
     destructFaceElement(element) {
@@ -807,6 +843,43 @@ class Destructor {
 const destructor = new Destructor();
 
 class Media {
+    async prepareVoiceElement(file) {
+        // const type = await ntCall("ns-fsApi", "getFileType", [file]);
+        const ext = file.split(".").pop();  // 支持amr
+        const md5 = await ntCall("ns-fsApi", "getFileMd5", [file]);
+        const fileName = `${md5}.${ext}`;
+        const filePath = await ntCall("ns-ntApi", "nodeIKernelMsgService/getRichMediaFilePath", [
+            {
+                md5HexStr: md5,
+                fileName: fileName,
+                elementType: 4,
+                elementSubType: 0,
+                thumbSize: 0,
+                needCreate: true,
+                fileType: 1,  // 这个未知
+            },
+        ]);
+        await ntCall("ns-fsApi", "copyFile", [{ fromPath: file, toPath: filePath }]);
+        const fileSize = await ntCall("ns-fsApi", "getFileSize", [file]);
+        return {
+            canConvert2Text: true,
+            fileName: fileName,
+            filePath: filePath,
+            md5HexStr: md5,
+            fileId: 0,
+            fileSubId: '',
+            fileSize: fileSize,
+            duration: 2,
+            formatType: 1,
+            voiceType: 1,
+            voiceChangeType: 0,
+            playState: 1,
+            waveAmplitudes: [
+                99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
+            ],
+        }
+    }
+
     async prepareImageElement(file) {
         const type = await ntCall("ns-fsApi", "getFileType", [file]);
         const md5 = await ntCall("ns-fsApi", "getFileMd5", [file]);
