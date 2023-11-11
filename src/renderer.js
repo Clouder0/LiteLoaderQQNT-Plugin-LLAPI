@@ -17,6 +17,8 @@ const exists = LLAPI_PRE.exists;
 const qmenu = []
 let first_ckeditorInstance = false
 
+let sendRecords = []
+
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -337,7 +339,7 @@ class Api extends EventEmitter {
         }]
      */
     async sendMessage(peer, elements) {
-        return ntCall("ns-ntApi", "nodeIKernelMsgService/sendMsg", [
+        ntCall("ns-ntApi", "nodeIKernelMsgService/sendMsg", [
             {
                 msgId: "0",
                 peer: destructor.destructPeer(peer),
@@ -355,6 +357,18 @@ class Api extends EventEmitter {
             },
             null,
         ]);
+        function checkSendRecord() {
+            return new Promise((resolve, reject) => {
+                if (sendRecords.length > 0) {
+                    resolve(sendRecords.pop());
+                } else {
+                    setTimeout(() => {
+                        resolve(checkSendRecord());
+                    }, 500);
+                }
+            });
+        }
+        return checkSendRecord()
     }
     async recallMessage(peer, msgIds) {
         ntCall("ns-ntApi", "nodeIKernelMsgService/recallMsg", [
@@ -474,6 +488,23 @@ ipcRenderer_on('new_message-main', (event, args) => {
      * @description 获取新消息
      */
     apiInstance.emit("new-messages", messages);
+});
+
+ipcRenderer_on('new-send-message-main', (event, args) => {
+    // const messages = (args?.[1]?.[0]?.payload?.msgList).map((msg) => constructor.constructMessage(msg));
+    /**
+     * @description 消息发送成功
+     */
+    let sendMsg = args?.[1]?.[0]?.payload?.msgRecord
+    sendMsg = constructor.constructMessage(sendMsg)
+    /*
+    * {
+    *   msgId: string,
+    * }
+    * */
+    // console.log("new-send-message-main", sendMsg)
+    sendRecords.push(sendMsg)
+    apiInstance.emit("new-send-messages", [sendMsg]);
 });
 ipcRenderer_on('user-info-list-main', (event, args) => {
     apiInstance.emit("user-info-list", args);

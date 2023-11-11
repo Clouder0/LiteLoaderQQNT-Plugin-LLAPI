@@ -46,6 +46,10 @@ function onBrowserWindowCreated(window, plugin) {
         } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelGroupListener/onGroupSingleScreenNotifies") {
             // 群聊通知
         }
+        else if (args?.[1]?.[0]?.cmdName === "nodeIKernelMsgListener/onAddSendMsg") {
+            // 发送消息成功
+            window.webContents.send('new-send-message-main', args);
+        }
         if (!channel.includes("LiteLoader")) {
             // output(channel, JSON.stringify(args));
         }
