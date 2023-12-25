@@ -955,7 +955,7 @@ class Media {
                     peerUid: peerUid,
                     elementId: elementId,
                     thumbSize: 0,
-                    downloadType: 2,
+                    downloadType: 1,
                     filePath: filePath,
                 },
             },
