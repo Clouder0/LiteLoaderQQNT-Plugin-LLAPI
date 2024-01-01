@@ -1031,8 +1031,10 @@ function onLoad() {
                         const ndoe_rect = node.previousSibling.getBoundingClientRect()
                         const message_element = document.elementFromPoint(ndoe_rect.x, ndoe_rect.y)
                         //?.closest(".msg-content-container")?.closest(".message");
-                        qmenu[0].forEach(listener => {
-                            listener(node.previousSibling, message_element);
+                        qmenu.forEach(o => {
+                            o.forEach(listener => {
+                                listener(node.previousSibling, message_element);
+                            });
                         });
                     }
                     // QQ消息更新
