@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-14 22:54:43
+ * @LastEditTime: 2024-01-14 23:22:34
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -446,7 +446,7 @@ class Api extends EventEmitter {
         ]);
     }
     async test(ee="437136493_groupMemberList_MainWindow") {
-        console.log(await apiInstance.getGroupMemberList(ee, 30));
+        //console.log(await apiInstance.getGroupMemberList(ee, 30));
     }
 }
 
@@ -944,7 +944,8 @@ function onLoad() {
                                 item = item.toJSON()
                                 if(item?.baseVersion){
                                     if(item.nodes?.[0]?.data) {
-                                        console.log(item.nodes[0].data)
+                                        // 输入文字
+                                        //console.log(item.nodes[0].data)
                                     }
                                 }
                             })

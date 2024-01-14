@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-14 22:53:37
+ * @LastEditTime: 2024-01-14 23:34:29
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -77,7 +77,7 @@ function onBrowserWindowCreated(window) {
                 window.webContents.send('set_message-main');
             }
             if (data && data[0] === "nodeIKernelMsgService/sendMsg") {
-                output(JSON.stringify(args))
+                //output(JSON.stringify(args[0][1][2]["msgElements"][0]["textElement"]["content"]))
             }
         }
         if (name === "___!add_message_list") {
@@ -373,7 +373,6 @@ ipcMain.handle(
     "LiteLoader.LLAPI_PRE.get_peer",
     (event) => {
         try {
-            output(peer)
             return peer;
         } catch (error) {
             output(error);
