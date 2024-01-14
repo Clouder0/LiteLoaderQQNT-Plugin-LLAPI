@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-10-09 08:46:03
+ * @LastEditTime: 2024-01-14 22:54:43
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -664,7 +664,7 @@ class Destructor {
     destructRawElement(element) {
         return element.raw;
     }
-    
+
     destructPeer(peer) {
         return {
             chatType: peer.chatType == "friend" ? 1 : peer.chatType == "group" ? 2 : 1,
@@ -1028,6 +1028,5 @@ export function hookVue3() {
 
 hookVue3()
 
-export {
-    onLoad
-}
+
+onLoad()
