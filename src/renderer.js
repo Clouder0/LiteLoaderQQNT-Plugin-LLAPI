@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-15 16:18:58
+ * @LastEditTime: 2024-01-15 19:56:02
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -264,6 +264,44 @@ class Api extends EventEmitter {
             document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance.setData(message)
             const msg_list = document.querySelector(".ck.ck-content p")
             select.selectAllChildren(msg_list.childNodes[msg_list.childNodes.length-1])
+            return true
+        } catch (error) {
+            return false
+        }
+    }
+    /**
+     * @description 删除消息编辑栏的指定类型内容
+     * @param {string} type 消息类型
+     * @param {boolean} space 是否删除空格
+     * @returns true/false
+     */
+    del_editor(type, space=false) {
+        try {
+            const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable").ckeditorInstance;
+            const editorModel = ckeditorInstance.model; // 获取编辑器的 model
+            editorModel.change(writer => {
+                const root = ckeditorInstance.model.document.getRoot()
+                const firstParagraph = root.getChild(1);
+                if (firstParagraph && firstParagraph.is('element', 'paragraph')) {
+                    // 获取所有子节点
+                    const children = Array.from(firstParagraph.getChildren());
+                    const find_children = children.find(child => child.name == type);
+                    writer.remove(find_children);
+                    if (space) {
+                        // 获取当前的选择对象
+                        const selection = editorModel.document.selection;
+                        // 获取选择范围的起始位置
+                        const position = selection.getFirstPosition();
+                        // 创建一个新的范围，从当前位置向前偏移一个单位
+                        const rangeToDelete = writer.createRange(
+                            position.getShiftedBy(-1),
+                            position
+                        );
+                        // 删除该范围内的内容
+                        writer.remove(rangeToDelete);
+                    }
+                }
+            });
             return true
         } catch (error) {
             return false
