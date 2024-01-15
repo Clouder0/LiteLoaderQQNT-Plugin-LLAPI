@@ -2,7 +2,7 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-14 23:22:34
+ * @LastEditTime: 2024-01-15 16:18:58
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -349,6 +349,7 @@ class Api extends EventEmitter {
                         else return null;
                     }),
                 ),
+                msgAttributeInfos: new Map()
             },
             null,
         ]);
@@ -366,7 +367,8 @@ class Api extends EventEmitter {
                 dstContacts: [
                     destructor.destructPeer(dstpeer)
                 ],
-                commentElements: []
+                commentElements: [],
+                msgAttributeInfos: new Map()
             },
             null,
         ]);
@@ -808,23 +810,26 @@ const destructor = new Destructor();
 
 class Media {
     async prepareImageElement(file) {
-        const type = await ntCall("ns-fsApi", "getFileType", [file]);
-        const md5 = await ntCall("ns-fsApi", "getFileMd5", [file]);
+        const type = await ntCall("ns-FsApi", "getFileType", [file]);
+        const md5 = await ntCall("ns-FsApi", "getFileMd5", [file]);
         const fileName = `${md5}.${type.ext}`;
-        const filePath = await ntCall("ns-ntApi", "nodeIKernelMsgService/getRichMediaFilePath", [
+        const filePath = await ntCall("ns-ntApi", "nodeIKernelMsgService/getRichMediaFilePathForGuild", [
             {
-                md5HexStr: md5,
-                fileName: fileName,
-                elementType: 2,
-                elementSubType: 0,
-                thumbSize: 0,
-                needCreate: true,
-                fileType: 1,
-            },
+                path_info: {
+                    md5HexStr: md5,
+                    fileName: fileName,
+                    elementType: 2,
+                    elementSubType: 0,
+                    thumbSize: 0,
+                    needCreate: true,
+                    downloadType: 1,
+                    file_uuid: ""
+                }
+            }
         ]);
-        await ntCall("ns-fsApi", "copyFile", [{ fromPath: file, toPath: filePath }]);
-        const imageSize = await ntCall("ns-fsApi", "getImageSizeFromPath", [file]);
-        const fileSize = await ntCall("ns-fsApi", "getFileSize", [file]);
+        await ntCall("ns-FsApi", "copyFile", [{ fromPath: file, toPath: filePath }]);
+        const imageSize = await ntCall("ns-FsApi", "getImageSizeFromPath", [file]);
+        const fileSize = await ntCall("ns-FsApi", "getFileSize", [file]);
         return {
             md5HexStr: md5,
             fileSize: fileSize,
