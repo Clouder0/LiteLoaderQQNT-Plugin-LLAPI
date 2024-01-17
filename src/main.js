@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-15 16:09:49
+ * @LastEditTime: 2024-01-17 16:49:19
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -80,6 +80,7 @@ function onBrowserWindowCreated(window) {
             if (data && data[0] == "nodeIKernelMsgService/getRichMediaFilePathForGuild") {
                 //output(JSON.stringify(args))
             }
+            output(JSON.stringify(args))
         }
         if (name === "___!add_message_list") {
             const peer = args[0][0]
