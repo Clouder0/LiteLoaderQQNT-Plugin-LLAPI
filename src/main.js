@@ -2,7 +2,7 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-17 17:18:01
+ * @LastEditTime: 2024-01-17 17:54:19
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
@@ -12,6 +12,7 @@ const { existsSync } = require("fs");
 const util = require('util');
 
 let peer;
+let account = '0';
 let i=0;
 const pendingCallbacks = {};
 
@@ -45,6 +46,9 @@ function onBrowserWindowCreated(window) {
             // 群聊通知
         }
         if (!channel.includes("LiteLoader")) {
+            if (args?.[1]?.account?.length > 0 && account == "0") {
+                window.webContents.send('user-login-main', args[1]);
+            }
             // output(channel, JSON.stringify(args));
         }
         if (args[0]?.callbackId) {

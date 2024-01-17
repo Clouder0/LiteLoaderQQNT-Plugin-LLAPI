@@ -341,7 +341,7 @@ class Api extends EventEmitter {
      * @param {string} uin QQ号
      */
     async resetLoginInfo(uin) {
-        return await ntCall("ns-ntApi", "nodeIKernelLoginService/resetLoginInfo", [
+        await ntCall("ns-ntApi", "nodeIKernelLoginService/resetLoginInfo", [
             {
                 uin: uin
             },
@@ -376,6 +376,9 @@ ipcRenderer_on('friends-list-updated-main', (event, args) => {
     const friendsList = [];
     ((args?.[1]?.[0]?.payload?.data || [])).forEach((category) => friendsList.push(...((category?.buddyList || [])).map((friend) => constructor.constructUser(friend))));
     apiInstance.emit("friends-list-updated", friendsList);
+});
+ipcRenderer_on('user-login-main', (event, userInfo) => {
+    apiInstance.emit("user-login", userInfo);
 });
 Object.defineProperty(window, "LLAPI", {
     value: apiInstance,
