@@ -119,7 +119,7 @@ class Api extends EventEmitter {
         }
     }
     /**
-     * @description 删除消息编辑栏的指定类型内容
+     * @description 删除消息编辑栏的指定类型内容(实验性)
      * @param {string} type 消息类型
      * @param {boolean} space 是否删除空格
      * @returns true/false
