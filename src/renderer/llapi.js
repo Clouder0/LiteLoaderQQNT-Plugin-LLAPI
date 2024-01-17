@@ -4,6 +4,8 @@ import { destructor } from "./destructor.js";
 import { media } from "./media.js";
 import { output, ntCall } from "./utils.js";
 
+export const qmenu = []
+
 const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
 
 class Api extends EventEmitter {
