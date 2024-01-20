@@ -2,17 +2,17 @@
  * @Author: Night-stars-1 nujj1042633805@gmail.com
  * @Date: 2023-07-22 00:36:20
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2023-09-18 00:01:13
+ * @LastEditTime: 2024-01-17 17:54:19
  * @Description: 
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
  */
-
 const { ipcMain } = require("electron");
 const { existsSync } = require("fs");
 const util = require('util');
 
 let peer;
+let account = '0';
 let i=0;
 const pendingCallbacks = {};
 
@@ -25,15 +25,14 @@ function printObject(object) {
 }
 
 // 创建窗口时触发
-function onBrowserWindowCreated(window, plugin) {
-    const original_send = (window.webContents.__qqntim_original_object && window.webContents.__qqntim_original_object.send) || window.webContents.send;
+function onBrowserWindowCreated(window) {
+    const original_send = window.webContents.send;
     const patched_send = (channel, ...args) => {
         if (args?.[1]?.[0]?.cmdName === "nodeIKernelMsgListener/onRecvMsg") {
             window.webContents.send('new_message-main', args);
-            //output(args)
         } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelGroupListener/onGroupListUpdate") {
             window.webContents.send('groups-list-updated-main', args);
-        } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelBuddyListener/onBuddyListChange") {
+        } else if (args?.[1]?.[0]?.cmdName === "onBuddyListChange") {
             window.webContents.send('friends-list-updated-main', args);
         } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelProfileListener/onProfileSimpleChanged") {
             window.webContents.send('user-info-list-main', args);
@@ -51,6 +50,9 @@ function onBrowserWindowCreated(window, plugin) {
             window.webContents.send('new-send-message-main', args);
         }
         if (!channel.includes("LiteLoader")) {
+            if (args?.[1]?.account?.length > 0 && account == "0") {
+                window.webContents.send('user-login-main', args[1]);
+            }
             // output(channel, JSON.stringify(args));
         }
         if (args[0]?.callbackId) {
@@ -62,16 +64,12 @@ function onBrowserWindowCreated(window, plugin) {
         }
         return original_send.call(window.webContents, channel, ...args);
     };
-    if (window.webContents.__qqntim_original_object) {
-        window.webContents.__qqntim_original_object.send = patched_send;
-      } else {
-        window.webContents.send = patched_send;
-    }
+    window.webContents.send = patched_send;
     function ipc_message(_, status, name, ...args) {
         if (name !== "___!log" && args[0][1] && args[0][1][0] != "info") {
             const event = args[0][0];
             const data = args[0][1];
-            //output(JSON.stringify(args))
+            // [[{"type":"request","callbackId":"ad39f880-c2f6-47e2-954b-b7a2cab35e55","eventName":"ns-BusinessApi-4"},["fetchAuthData"]]]
             if (data && data[0] === "nodeIKernelMsgService/setMsgRead") {
                 peer = data[1]?.peer;
                 peer = {
@@ -81,7 +79,15 @@ function onBrowserWindowCreated(window, plugin) {
                 }
                 window.webContents.send('set_message-main');
             }
-            //output(JSON.stringify(args))
+            if (data && data[0] === "nodeIKernelMsgService/sendMsg") {
+                //output(JSON.stringify(args[0][1][2]["msgElements"][0]["textElement"]["content"]))
+            }
+            if (data && data[0] === "nodeIKernelMsgService/forwardMsgWithComment") {
+                //output(JSON.stringify(args))
+            }
+            if (data && data[0] == "nodeIKernelMsgService/getRichMediaFilePathForGuild") {
+                //output(JSON.stringify(args))
+            }
         }
         if (name === "___!add_message_list") {
             const peer = args[0][0]
@@ -325,7 +331,7 @@ function onBrowserWindowCreated(window, plugin) {
                 output("ipc-msg被拦截", argumentsList[3][1][1].inputWordInfo.word);
             }
              */
-            ipc_message(...argumentsList)
+            ipc_message(...argumentsList);
             return target.apply(thisArg, argumentsList);
         }
     });
@@ -342,17 +348,18 @@ function onBrowserWindowCreated(window, plugin) {
             };
         }
     });
+
     window.webContents.on('did-finish-load', () => {
         output('Page finished loading');
     });
 }
 
-// 加载插件时触发
-function onLoad(plugin) {
+function onLoad() {
+    // 加载插件时触发
     ipcMain.on("___!boot", (event) => {
         if (!event.returnValue) event.returnValue = { enabled: false };
     });
-    
+
     ipcMain.on("___!log", (event, level, ...args) => {
         console[{ 0: "debug", 1: "log", 2: "info", 3: "warn", 4: "error" }[level] || "log"](`[!Renderer:Log:${event.sender.id}]`, ...args);
     });
@@ -400,7 +407,8 @@ function output(...args) {
     console.log("\x1b[32m[LLAPI]\x1b[0m", ...args);
 }
 
+onLoad();
+
 module.exports = {
-    onLoad,
     onBrowserWindowCreated
 }
