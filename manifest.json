@@ -1,12 +1,12 @@
 {
-    "manifest_version": 3,
+    "manifest_version": 4,
     "type": "framework",
     "name": "LLAPI",
     "slug": "LLAPI",
     "description": "LiteLoaderQQNT的插件API",
-    "version": "1.1.6",
+    "version": "1.1.9",
     "thumbnail": "./icon.png",
-    "author": [
+    "authors": [
         {
             "name": "Night-stars-1",
             "link": "https://github.com/Night-stars-1"
@@ -22,8 +22,8 @@
         "darwin"
     ],
     "injects": {
-        "renderer": "./src/renderer.js",
         "main": "./src/main.js",
-        "preload": "./src/preload.js"
+        "preload": "./src/preload.js",
+        "renderer": "./src/renderer.js"
     }
 }
