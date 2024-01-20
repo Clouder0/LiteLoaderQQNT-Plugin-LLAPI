@@ -227,6 +227,7 @@ class Api extends EventEmitter {
         }]
      */
     async sendMessage(peer, elements) {
+        console.log("sendElements", elements)
         ntCall("ns-ntApi", "nodeIKernelMsgService/sendMsg", [
             {
                 msgId: "0",

@@ -1,3 +1,4 @@
+import {media} from "./media";
 
 class Constructor {
     constructTextElement(ele) {
@@ -26,7 +27,7 @@ class Constructor {
         return {
             type: "image",
             file: ele.picElement.sourcePath,
-            downloadedPromise: require("./media").media.downloadMedia(msg.msgId, ele.elementId, msg.peerUid, msg.chatType, ele.picElement.thumbPath.get(0), ele.picElement.sourcePath),
+            downloadedPromise: media.downloadMedia(msg.msgId, ele.elementId, msg.peerUid, msg.chatType, ele.picElement.thumbPath.get(0), ele.picElement.sourcePath),
             raw: ele,
         };
     }

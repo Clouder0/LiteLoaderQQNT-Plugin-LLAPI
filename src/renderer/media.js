@@ -1,3 +1,4 @@
+import {ntCall} from "./utils";
 
 const exists = LLAPI_PRE.exists;
 
@@ -8,17 +9,18 @@ class Media {
         const md5 = await ntCall("ns-FsApi", "getFileMd5", [file]);
         const fileName = `${md5}.${ext}`;
         const filePath = await ntCall("ns-ntApi", "nodeIKernelMsgService/getRichMediaFilePathForGuild", [
-            {
-                path_info: {
-                    md5HexStr: md5,
-                    fileName: fileName,
-                    elementType: 4,
-                    elementSubType: 0,
-                    thumbSize: 0,
-                    needCreate: true,
-                    fileType: 1,  // 这个未知
-                }
-            }
+            {path_info:{
+                md5HexStr: md5,
+                fileName: fileName,
+                elementType: 4,
+                elementSubType: 0,
+                thumbSize: 0,
+                needCreate: true,
+                fileType: 1,  // 这个未知
+                downloadType: 1,
+                file_uuid: ""
+            }}
+
         ]);
         await ntCall("ns-FsApi", "copyFile", [{fromPath: file, toPath: filePath}]);
         const fileSize = await ntCall("ns-FsApi", "getFileSize", [file]);
@@ -60,7 +62,7 @@ class Media {
                 }
             }
         ]);
-        await ntCall("ns-FsApi", "copyFile", [{ fromPath: file, toPath: filePath }]);
+        await ntCall("ns-FsApi", "copyFile", [{fromPath: file, toPath: filePath}]);
         const imageSize = await ntCall("ns-FsApi", "getImageSizeFromPath", [file]);
         const fileSize = await ntCall("ns-FsApi", "getFileSize", [file]);
         return {
@@ -79,6 +81,7 @@ class Media {
             summary: "",
         };
     }
+
     async downloadMedia(msgId, elementId, peerUid, chatType, filePath, originalFilePath) {
         if (await exists(originalFilePath)) return;
         return await ntCall("ns-ntApi", "nodeIKernelMsgService/downloadRichMedia", [
