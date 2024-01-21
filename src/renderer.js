@@ -2,14 +2,14 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-17 17:32:31
+ * @LastEditTime: 2024-01-21 22:42:14
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
  */
 import { hookVue3 } from "./renderer/vue.js";
 import { apiInstance, qmenu } from "./renderer/llapi.js";
-import { output } from "./renderer/utils.js";
+import { output, delay } from "./renderer/utils.js";
 
 //const plugin_path = LiteLoader.plugins.LLAPI.path.plugin;
 //const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
@@ -117,7 +117,12 @@ function onLoad() {
     navigation.addEventListener("navigatesuccess", function(event) {
         apiInstance.emit("change_href", location)
     });
-    apiInstance.emit("change_href", location)
+    const changeHrefInterval = setInterval(() => {
+        if (location.hash == "#/main/message") {
+            apiInstance.emit("change_href", location)
+            clearInterval(changeHrefInterval);
+        }
+    }, 3000);
 }
 
 hookVue3()
