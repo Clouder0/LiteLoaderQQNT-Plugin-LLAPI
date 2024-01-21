@@ -1,3 +1,8 @@
+/*
+ * @Date: 2024-01-17 16:57:23
+ * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
+ * @LastEditTime: 2024-01-21 23:23:47
+ */
 import { constructor } from "./msgConstructor.js";
 import { EventEmitter } from "./eventEmitter.js";
 import { destructor } from "./destructor.js";
@@ -348,7 +353,10 @@ class Api extends EventEmitter {
             null
         ]);
     }
-    async test(ee="437136493_groupMemberList_MainWindow") {
+    async test() {
+        ntCall("ns-WindowApi", "openExternalWindow", [
+            "SettingWindow"
+        ]);
         //console.log(await apiInstance.getGroupMemberList(ee, 30));
     }
 }
