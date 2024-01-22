@@ -62,7 +62,8 @@ function onLoad() {
     */
     const observer = new MutationObserver((mutationsList, observer) => {
         // 遍历每个变化
-        for (const { addedNodes } of mutationsList) {
+        for (const { type, addedNodes } of mutationsList) {
+            if (type !== 'childList') continue;
             // 遍历每个新增的节点
             addedNodes.forEach(node => {
                 // 判断节点是否为元素节点
@@ -107,7 +108,7 @@ function onLoad() {
             });
         }
     });
-    observer.observe(document.body, { childList: true });
+    observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener('contextmenu', monitor_qmenu)
     navigation.addEventListener("navigatesuccess", function(event) {
         apiInstance.emit("change_href", location)
