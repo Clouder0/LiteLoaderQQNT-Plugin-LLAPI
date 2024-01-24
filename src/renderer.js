@@ -2,14 +2,14 @@
  * @Author: Night-stars-1
  * @Date: 2023-08-03 23:18:21
  * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
- * @LastEditTime: 2024-01-17 17:32:31
+ * @LastEditTime: 2024-01-22 15:29:30
  * @Description: 借鉴了NTIM, 和其他大佬的代码
  * 
  * Copyright (c) 2023 by Night-stars-1, All Rights Reserved. 
  */
 import { hookVue3 } from "./renderer/vue.js";
 import { apiInstance, qmenu } from "./renderer/llapi.js";
-import { output } from "./renderer/utils.js";
+import { output, delay } from "./renderer/utils.js";
 
 //const plugin_path = LiteLoader.plugins.LLAPI.path.plugin;
 //const ipcRenderer_on = LLAPI_PRE.ipcRenderer_LL_on;
@@ -62,54 +62,50 @@ function onLoad() {
     */
     const observer = new MutationObserver((mutationsList, observer) => {
         // 遍历每个变化
-        for (const mutation of mutationsList) {
-            const { target } = mutation
-            const { classList } = target
-            // 检查是否有新元素添加
-            if (mutation.type === 'childList' && classList[0]) {
-                // 遍历每个新增的节点
-                mutation.addedNodes.forEach(node => {
-                    // 判断节点是否为元素节点
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        node.querySelectorAll('.image.pic-element').forEach((img_node) => {
-                            img_node.addEventListener('contextmenu', monitor_qmenu)
-                        })
-                        node.querySelectorAll('.image.market-face-element').forEach((img_node) => {
-                            img_node.addEventListener('contextmenu', monitor_qmenu)
-                        })
-                    }
-                    // QQ菜单弹出
-                    if (node?.previousSibling?.classList?.[0] == "q-context-menu"  && (node?.previousSibling?.innerText.includes("转发") || node?.previousSibling?.innerText.includes("转文字")) && qmenu.length > 0) {
-                        const ndoe_rect = node.previousSibling.getBoundingClientRect()
-                        const message_element = document.elementFromPoint(ndoe_rect.x, ndoe_rect.y)
-                        //?.closest(".msg-content-container")?.closest(".message");
-                        qmenu.forEach(o => {
-                            o.forEach(listener => {
-                                listener(node.previousSibling, message_element);
-                            });
+        for (const { type, addedNodes } of mutationsList) {
+            if (type !== 'childList') continue;
+            // 遍历每个新增的节点
+            addedNodes.forEach(node => {
+                // 判断节点是否为元素节点
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    node.querySelectorAll('.image.pic-element').forEach((img_node) => {
+                        img_node.addEventListener('contextmenu', monitor_qmenu)
+                    })
+                    node.querySelectorAll('.image.market-face-element').forEach((img_node) => {
+                        img_node.addEventListener('contextmenu', monitor_qmenu)
+                    })
+                }
+                // QQ菜单弹出
+                if (node?.previousSibling?.classList?.[0] == "q-context-menu"  && (node?.previousSibling?.innerText.includes("转发") || node?.previousSibling?.innerText.includes("转文字")) && qmenu.length > 0) {
+                    const ndoe_rect = node.previousSibling.getBoundingClientRect()
+                    const message_element = document.elementFromPoint(ndoe_rect.x, ndoe_rect.y)
+                    //?.closest(".msg-content-container")?.closest(".message");
+                    qmenu.forEach(o => {
+                        o.forEach(listener => {
+                            listener(node.previousSibling, message_element);
                         });
-                    }
-                    // QQ消息更新
-                    if (node.className == "ml-item" || node.className == "message vue-component") {
-                        apiInstance.emit("dom-up-messages", node);
-                    }
-                    const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable")?.ckeditorInstance;
-                    if (!first_ckeditorInstance && ckeditorInstance) {
-                        ckeditorInstance.model.document.on('change', (event, data) => {
-                            data.operations.forEach((item)=>{
-                                item = item.toJSON()
-                                if(item?.baseVersion){
-                                    if(item.nodes?.[0]?.data) {
-                                        // 输入文字
-                                        //console.log(item.nodes[0].data)
-                                    }
+                    });
+                }
+                // QQ消息更新
+                if (node.className == "ml-item" || node.className == "message vue-component") {
+                    apiInstance.emit("dom-up-messages", node);
+                }
+                const ckeditorInstance = document.querySelector(".ck.ck-content.ck-editor__editable")?.ckeditorInstance;
+                if (!first_ckeditorInstance && ckeditorInstance) {
+                    ckeditorInstance.model.document.on('change', (event, data) => {
+                        data.operations.forEach((item)=>{
+                            item = item.toJSON()
+                            if(item?.baseVersion){
+                                if(item.nodes?.[0]?.data) {
+                                    // 输入文字
+                                    //console.log(item.nodes[0].data)
                                 }
-                            })
-                        });
-                        first_ckeditorInstance = true
-                    }
-                });
-            }
+                            }
+                        })
+                    });
+                    first_ckeditorInstance = true
+                }
+            });
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -117,7 +113,12 @@ function onLoad() {
     navigation.addEventListener("navigatesuccess", function(event) {
         apiInstance.emit("change_href", location)
     });
-    apiInstance.emit("change_href", location)
+    const changeHrefInterval = setInterval(() => {
+        if (location.hash == "#/main/message") {
+            apiInstance.emit("change_href", location)
+            clearInterval(changeHrefInterval);
+        }
+    }, 3000);
 }
 
 hookVue3()
