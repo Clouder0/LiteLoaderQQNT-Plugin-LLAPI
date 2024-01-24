@@ -28,9 +28,14 @@ function printObject(object) {
 function onBrowserWindowCreated(window) {
     const original_send = window.webContents.send;
     const patched_send = (channel, ...args) => {
+        // output("received ipc msg: ", JSON.stringify(args));
         if (args?.[1]?.[0]?.cmdName === "nodeIKernelMsgListener/onRecvMsg") {
             window.webContents.send('new_message-main', args);
         } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelGroupListener/onGroupListUpdate") {
+            // output("群列表更新1", JSON.stringify(args));
+            window.webContents.send('groups-list-updated-main', args);
+        } else if (args?.[1]?.[0]?.cmdName === "onGroupListUpdate") {
+            // output("群列表更新", JSON.stringify(args));
             window.webContents.send('groups-list-updated-main', args);
         } else if (args?.[1]?.[0]?.cmdName === "onBuddyListChange") {
             window.webContents.send('friends-list-updated-main', args);
