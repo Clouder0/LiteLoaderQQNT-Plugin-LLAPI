@@ -1,3 +1,5 @@
+import { media } from "./media.js";
+
 class Constructor {
     constructTextElement(ele) {
         return {
