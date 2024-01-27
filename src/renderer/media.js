@@ -1,4 +1,9 @@
-import {ntCall} from "./utils";
+/*
+ * @Date: 2024-01-17 16:34:19
+ * @LastEditors: Night-stars-1 nujj1042633805@gmail.com
+ * @LastEditTime: 2024-01-25 19:36:55
+ */
+import { ntCall } from "./utils.js";
 
 const exists = LLAPI_PRE.exists;
 
@@ -62,7 +67,7 @@ class Media {
                 }
             }
         ]);
-        await ntCall("ns-FsApi", "copyFile", [{fromPath: file, toPath: filePath}]);
+        await ntCall("ns-FsApi", "copyFile", [{ fromPath: file, toPath: filePath }]);
         const imageSize = await ntCall("ns-FsApi", "getImageSizeFromPath", [file]);
         const fileSize = await ntCall("ns-FsApi", "getFileSize", [file]);
         return {
