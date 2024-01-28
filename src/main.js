@@ -10,6 +10,7 @@
 const { ipcMain } = require("electron");
 const { existsSync } = require("fs");
 const util = require('util');
+const { imc_handle } = require("./imc_handler");
 
 let peer;
 let account = '0';
@@ -30,6 +31,12 @@ function onBrowserWindowCreated(window) {
     const patched_send = (channel, ...args) => {
         // output("received ipc msg: ", JSON.stringify(args));
         if (args?.[1]?.[0]?.cmdName === "nodeIKernelMsgListener/onRecvMsg") {
+            try{
+                const messages = (args?.[1]?.[0]?.payload?.msgList).map((msg) => constructor.constructMessage(msg));
+                imc_handle(messages).then(() => {console.log("Done")}).catch((e) => {console.log(e)});
+            } catch(error) {
+                console.log(error)
+            }
             window.webContents.send('new_message-main', args);
         } else if (args?.[1]?.[0]?.cmdName === "nodeIKernelGroupListener/onGroupListUpdate") {
             window.webContents.send('groups-list-updated-main', args);
@@ -200,3 +207,120 @@ onLoad();
 module.exports = {
     onBrowserWindowCreated
 }
+
+const exists = async (path) => {
+    try {
+                return existsSync(path);
+            } catch (error) {
+                console.log(error);
+                return {};
+            }
+}
+
+
+class Constructor {
+    constructTextElement(ele) {
+        return {
+            type: "text",
+            content: ele.textElement.content,
+            raw: ele,
+        };
+    }
+    constructFaceElement(ele) {
+        return {
+            type: "face",
+            faceIndex: ele.faceElement.faceIndex,
+            faceType: ele.faceElement.faceType == 1 ? "normal" : ele.faceElement.faceType == 2 ? "normal-extended" : ele.faceElement.faceType == 3 ? "super" : ele.faceElement.faceType,
+            faceSuperIndex: ele.faceElement.stickerId && parseInt(ele.faceElement.stickerId),
+            raw: ele,
+        };
+    }
+    constructRawElement(ele) {
+        return {
+            type: "raw",
+            raw: ele,
+        };
+    }
+    constructImageElement(ele, msg) {
+        return {
+            type: "image",
+            file: ele.picElement.sourcePath,
+            raw: ele,
+        };
+    }
+    constructMessage(msg) {
+        const elements = (msg.elements).map((ele) => {
+            if (ele.elementType == 1) return this.constructTextElement(ele);
+            else if (ele.elementType == 2) {
+                const element = this.constructImageElement(ele, msg);
+                return element;
+            } else if (ele.elementType == 6) return this.constructFaceElement(ele);
+            else return this.constructRawElement(ele);
+        });
+        return {
+            allDownloadedPromise: [],
+            peer: {
+                uid: msg.peerUid,
+                name: msg.peerName,
+                chatType: msg.chatType == 1 ? "friend" : msg.chatType == 2 ? "group" : "others",
+            },
+            sender: {
+                uid: msg.senderUid,
+                memberName: msg.sendMemberName || msg.sendNickName,
+                nickName: msg.sendNickName,
+            },
+            elements: elements,
+            raw: msg,
+        };
+    }
+    constructUser(user) {
+        return {
+            uid: user.uid,
+            qid: user.qid,
+            uin: user.uin,
+            avatarUrl: user.avatarUrl,
+            nickName: user.nick,
+            bio: user.longNick,
+            sex: { 1: "male", 2: "female", 255: "unset", 0: "unset" }[user.sex] || "others",
+            raw: user,
+        };
+    }
+    constructGroup(group) {
+        return {
+            uid: group.groupCode,
+            avatarUrl: group.avatarUrl,
+            name: group.groupName,
+            role: { 4: "master", 3: "moderator", 2: "member" }[group.memberRole] || "others",
+            maxMembers: group.maxMember,
+            members: group.memberCount,
+            raw: group,
+        };
+    }
+    constructFace(id, label, path) {
+        // 创建 msg-qqface 元素
+        const msgQQFace = document.createElement('msg-qqface');
+        // 设置 data 属性的值
+        const dataValue = {
+            type: 'qqFace',
+            id: id,
+            label: label,
+            path: path,
+            animationData: {
+                packId: '1',
+                stickerId: '28',
+                stickerType: 1,
+                sourceType: 1,
+                resultId: '',
+                superisedId: '',
+                randomType: 1
+            }
+        };
+        msgQQFace.setAttribute('data', JSON.stringify(dataValue));
+        return msgQQFace.outerHTML;
+    }
+    test() {
+        console.log("test");
+    }
+}
+
+const constructor = new Constructor();
